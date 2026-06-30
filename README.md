@@ -16,6 +16,9 @@ A collection of open-source tools for Amazon Connect to help manage and optimize
 
 These tools are designed to work with Amazon Connect and related AWS services. Each subfolder contains a standalone tool with its own Lambda backend, frontend, and deployment instructions.
 
+If you dont have developer experience or access to a developer the easiest way to work with the files above is to setup your own Visual Studio/GitHub CoPilot environment, this will then enable you to donwload the sanitized source files and then place them into VS, once inside VS you can get GitHub CoPilot to review the files and then start building either your own solution or tailoring the already created version to your own requirements.
+For setup of GitHub CoPilot refer to website and also AWS documentaion https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html
+
 ## Structure
 
 Each tool folder contains only the essential files needed to deploy and run the tool:
