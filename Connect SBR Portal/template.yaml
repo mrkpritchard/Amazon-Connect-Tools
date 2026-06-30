@@ -1,0 +1,257 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Amazon Connect Skills Based Routing (SBR) Portal - 
+  Manage user proficiencies, search by skill, and audit changes.
+
+Parameters:
+  ConnectInstanceId:
+    Type: String
+    Description: Amazon Connect Instance ID
+  CacheBucketName:
+    Type: String
+    Description: S3 bucket name for caching user/proficiency data
+  CognitoUserPoolArn:
+    Type: String
+    Description: Cognito User Pool ARN for API Gateway authorization
+  AuditTableName:
+    Type: String
+    Default: SBRPortalAuditLog
+    Description: DynamoDB table name for audit logs
+  GroupsTableName:
+    Type: String
+    Default: SBRPortalGroups
+    Description: DynamoDB table name prefix for group permissions
+
+Globals:
+  Function:
+    Timeout: 60
+    Runtime: python3.12
+    MemorySize: 256
+    Environment:
+      Variables:
+        CONNECT_INSTANCE_ID: !Ref ConnectInstanceId
+        CACHE_BUCKET: !Ref CacheBucketName
+
+  Api:
+    Cors:
+      AllowMethods: "'GET,PUT,POST,DELETE,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'*'"
+
+Resources:
+  # --- API Gateway ---
+  SBRPortalApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !Ref CognitoUserPoolArn
+
+  # --- Lambda Functions ---
+  ListUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: listUsers.handler
+      CodeUri: lambda/
+      Timeout: 120
+      MemorySize: 512
+      Policies:
+        - AmazonConnectReadOnlyAccess
+        - S3CrudPolicy:
+            BucketName: !Ref CacheBucketName
+      Events:
+        GetUsers:
+          Type: Api
+          Properties:
+            Path: /api/users
+            Method: GET
+            RestApiId: !Ref SBRPortalApi
+
+  ListProficienciesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: listProficiencies.handler
+      CodeUri: lambda/
+      Policies:
+        - AmazonConnectReadOnlyAccess
+        - S3CrudPolicy:
+            BucketName: !Ref CacheBucketName
+      Events:
+        GetProficiencies:
+          Type: Api
+          Properties:
+            Path: /api/proficiencies
+            Method: GET
+            RestApiId: !Ref SBRPortalApi
+
+  UpdateProficienciesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: updateProficiencies.handler
+      CodeUri: lambda/
+      Policies:
+        - AmazonConnectFullAccess
+        - S3CrudPolicy:
+            BucketName: !Ref CacheBucketName
+      Events:
+        UpdateProficiencies:
+          Type: Api
+          Properties:
+            Path: /api/users/{userId}/proficiencies
+            Method: PUT
+            RestApiId: !Ref SBRPortalApi
+
+  # --- Audit Log Functions ---
+  ListAuditLogsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: listAuditLogs.lambda_handler
+      CodeUri: lambda/audit/
+      Environment:
+        Variables:
+          AUDIT_TABLE_NAME: !Ref AuditTableName
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref AuditTableName
+      Events:
+        GetAuditLogs:
+          Type: Api
+          Properties:
+            Path: /api/audit
+            Method: GET
+            RestApiId: !Ref SBRPortalApi
+
+  WriteAuditLogFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: writeAuditLog.lambda_handler
+      CodeUri: lambda/audit/
+      Environment:
+        Variables:
+          AUDIT_TABLE_NAME: !Ref AuditTableName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AuditTableName
+      Events:
+        PostAuditLog:
+          Type: Api
+          Properties:
+            Path: /api/audit
+            Method: POST
+            RestApiId: !Ref SBRPortalApi
+
+  # --- Config Functions ---
+  GetUserProficienciesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: getUserProficiencies.lambda_handler
+      CodeUri: lambda/config/
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Sub "${GroupsTableName}-*"
+      Events:
+        GetUserProf:
+          Type: Api
+          Properties:
+            Path: /api/user/proficiencies
+            Method: GET
+            RestApiId: !Ref SBRPortalApi
+
+  ManageGroupsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: manageGroups.lambda_handler
+      CodeUri: lambda/config/
+      Environment:
+        Variables:
+          GROUPS_TABLE: !Ref GroupsTableName
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Sub "${GroupsTableName}-*"
+      Events:
+        GetGroups:
+          Type: Api
+          Properties:
+            Path: /api/groups
+            Method: GET
+            RestApiId: !Ref SBRPortalApi
+        CreateGroup:
+          Type: Api
+          Properties:
+            Path: /api/groups
+            Method: POST
+            RestApiId: !Ref SBRPortalApi
+        UpdateGroup:
+          Type: Api
+          Properties:
+            Path: /api/groups/{groupName}
+            Method: PUT
+            RestApiId: !Ref SBRPortalApi
+        DeleteGroup:
+          Type: Api
+          Properties:
+            Path: /api/groups/{groupName}
+            Method: DELETE
+            RestApiId: !Ref SBRPortalApi
+
+  ManageUsersFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: manageUsers.lambda_handler
+      CodeUri: lambda/config/
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: "SBRPortalUsers-*"
+      Events:
+        GetConfigUsers:
+          Type: Api
+          Properties:
+            Path: /api/config/users
+            Method: GET
+            RestApiId: !Ref SBRPortalApi
+        CreateConfigUser:
+          Type: Api
+          Properties:
+            Path: /api/config/users
+            Method: POST
+            RestApiId: !Ref SBRPortalApi
+        UpdateConfigUser:
+          Type: Api
+          Properties:
+            Path: /api/config/users/{userId}
+            Method: PUT
+            RestApiId: !Ref SBRPortalApi
+        DeleteConfigUser:
+          Type: Api
+          Properties:
+            Path: /api/config/users/{userId}
+            Method: DELETE
+            RestApiId: !Ref SBRPortalApi
+
+  # --- DynamoDB Tables ---
+  AuditLogTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref AuditTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: timestamp
+          KeyType: HASH
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+    Value: !Sub "https://${SBRPortalApi}.execute-api.${AWS::Region}.amazonaws.com/prod/api"
+  ListUsersFunction:
+    Description: List Users Lambda Function ARN
+    Value: !GetAtt ListUsersFunction.Arn
+  UpdateProficienciesFunction:
+    Description: Update Proficiencies Lambda Function ARN
+    Value: !GetAtt UpdateProficienciesFunction.Arn

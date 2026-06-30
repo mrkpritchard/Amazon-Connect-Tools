@@ -1,0 +1,467 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skills Based Routing Portal</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.6/dist/amazon-cognito-identity.min.js"></script>
+</head>
+<body>
+    <header>
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <button class="btn secondary" onclick="window.location.href='/index.html'" title="Back to Portal">← Back</button>
+                <div>
+                    <h1 style="margin:0; font-size:20px; font-weight:600; color:var(--text);">Skills Based Routing Portal</h1>
+                    <p style="margin:4px 0 0; font-size:13px; color:var(--muted);">Manage Users and Proficiencies</p>
+                </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div id="loggedInUser" style="font-size: 13px; color: var(--muted);"></div>
+                <button id="themeToggle" class="btn secondary" onclick="toggleTheme()">🌙</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Error/Info Messages -->
+        <div id="errorMessage" class="error-message" style="display: none;"></div>
+
+        <!-- Region Selector (always visible) -->
+        <section class="card">
+            <div class="row">
+                <div>
+                    <label for="regionSelect">Region</label>
+                    <select id="regionSelect" class="input" onchange="handleRegionChange()" style="min-width: 200px;">
+                        <option value="us-east-1">US (N. Virginia)</option>
+                        <option value="eu-central-1">EU (Frankfurt)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Tab Navigation -->
+        <div class="card" style="padding: 0; overflow: hidden;">
+            <div style="display: flex; border-bottom: 2px solid var(--border); background: var(--bg-secondary);">
+                <button class="tab-btn active" onclick="switchTab('userManagement')" id="tabUserManagement">
+                    👥 User Management
+                </button>
+                <button class="tab-btn" onclick="switchTab('proficiencySearch')" id="tabProficiencySearch">
+                    🔍 Proficiency Search
+                </button>
+                <button class="tab-btn" onclick="switchTab('auditLog')" id="tabAuditLog">
+                    📋 Audit Log
+                </button>
+                <button class="tab-btn" onclick="switchTab('securityProfiles')" id="tabSecurityProfiles" style="display: none;">
+                    🔒 Security Profiles
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Content: User Management -->
+        <div id="tabContent-userManagement" class="tab-content active">
+            <!-- Search and Controls -->
+            <section class="card">
+                <h3 style="margin:0 0 16px 0; font-size: 18px; font-weight: 600; color: var(--text);">Search Users</h3>
+                <div class="row">
+                    <div style="flex: 1; min-width: 300px;">
+                        <label for="searchInput">Search users by name or email</label>
+                        <input type="text" id="searchInput" class="input" placeholder="Search users by name or email...">
+                    </div>
+                    <div>
+                        <label>&nbsp;</label>
+                        <button id="searchBtn" class="btn primary">Search</button>
+                    </div>
+                    <div>
+                        <label>&nbsp;</label>
+                        <button id="refreshBtn" class="btn secondary">Refresh Users</button>
+                    </div>
+                    <div>
+                        <label>&nbsp;</label>
+                        <button id="downloadUsersBtn" class="btn secondary">📥 Download CSV</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Users Table -->
+            <section class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                    <h3 style="margin:0; font-size: 18px; font-weight: 600; color: var(--text);">Users with Proficiencies</h3>
+                    <div id="loadingIndicator" style="display: none; font-size: 18px; font-weight: 600; color: var(--accent); animation: pulse 1.5s ease-in-out infinite;">
+                        🔄 Loading users, please wait...
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th class="sortable" data-column="name">NAME</th>
+                                <th>ROUTING PROFILE</th>
+                                <th>PROFICIENCIES</th>
+                                <th style="text-align: right;">ACTIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 40px; color: var(--muted);">
+                                    Loading users...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+
+        <!-- Tab Content: Proficiency Search -->
+        <div id="tabContent-proficiencySearch" class="tab-content" style="display: none;">
+            <!-- Search by Proficiency Section -->
+            <section class="card">
+            <h3 style="margin:0 0 16px 0; font-size: 18px; font-weight: 600; color: var(--text);">Search by Proficiency</h3>
+            <p style="margin: 0 0 16px 0; font-size: 14px; color: var(--muted);">Find users who have specific proficiencies. Add up to 3 proficiencies to find users who have all of them.</p>
+            
+            <!-- Proficiency 1 -->
+            <div class="row" style="margin-bottom: 12px;">
+                <div style="flex: 1; min-width: 300px;">
+                    <label for="proficiencyFilter1">Proficiency 1</label>
+                    <select id="proficiencyFilter1" class="input">
+                        <option value="">Select a proficiency...</option>
+                    </select>
+                </div>
+                <div style="min-width: 150px;">
+                    <label for="levelFilter1">Level</label>
+                    <select id="levelFilter1" class="input">
+                        <option value="">Any Level</option>
+                        <option value="1">Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3">Level 3</option>
+                        <option value="4">Level 4</option>
+                        <option value="5">Level 5</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Proficiency 2 -->
+            <div class="row" style="margin-bottom: 12px;">
+                <div style="flex: 1; min-width: 300px;">
+                    <label for="proficiencyFilter2">Proficiency 2 (Optional)</label>
+                    <select id="proficiencyFilter2" class="input">
+                        <option value="">Select a proficiency...</option>
+                    </select>
+                </div>
+                <div style="min-width: 150px;">
+                    <label for="levelFilter2">Level</label>
+                    <select id="levelFilter2" class="input">
+                        <option value="">Any Level</option>
+                        <option value="1">Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3">Level 3</option>
+                        <option value="4">Level 4</option>
+                        <option value="5">Level 5</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Proficiency 3 -->
+            <div class="row" style="margin-bottom: 12px;">
+                <div style="flex: 1; min-width: 300px;">
+                    <label for="proficiencyFilter3">Proficiency 3 (Optional)</label>
+                    <select id="proficiencyFilter3" class="input">
+                        <option value="">Select a proficiency...</option>
+                    </select>
+                </div>
+                <div style="min-width: 150px;">
+                    <label for="levelFilter3">Level</label>
+                    <select id="levelFilter3" class="input">
+                        <option value="">Any Level</option>
+                        <option value="1">Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3">Level 3</option>
+                        <option value="4">Level 4</option>
+                        <option value="5">Level 5</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="row">
+                <div>
+                    <button id="searchProficiencyBtn" class="btn primary">Search</button>
+                </div>
+                <div>
+                    <button id="clearProficiencyBtn" class="btn secondary">Clear Filter</button>
+                </div>
+                <div>
+                    <button id="downloadProficiencySearchBtn" class="btn secondary">📥 Download CSV</button>
+                </div>
+            </div>
+            
+            <div id="proficiencyResults" style="margin-top: 16px; display: none;">
+                <div style="padding: 12px; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--accent);">
+                    <p id="proficiencyResultsCount" style="margin: 0; font-weight: 600; color: var(--text);"></p>
+                    <div id="proficiencyResultsDetails" style="margin-top: 8px; font-size: 14px; color: var(--muted);"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Users Table (shared by proficiency search) -->
+        <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin:0; font-size: 18px; font-weight: 600; color: var(--text);">Matching Users</h3>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th class="sortable" data-column="name">NAME</th>
+                            <th>ROUTING PROFILE</th>
+                            <th>PROFICIENCIES</th>
+                            <th style="text-align: right;">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="proficiencySearchTableBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px; color: var(--muted);">
+                                Select proficiencies above and click Search to find matching users...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Tab Content: Audit Log -->
+    <div id="tabContent-auditLog" class="tab-content">
+        <!-- Filters and Controls -->
+        <section class="card">
+            <h3 style="margin:0 0 16px 0; font-size: 18px; font-weight: 600; color: var(--text);">Audit Log Filters</h3>
+            <div class="row">
+                <div style="flex: 1; min-width: 250px;">
+                    <label for="auditUserSearch">Search by User or Modified By</label>
+                    <input type="text" id="auditUserSearch" class="input" placeholder="Search by name or email...">
+                </div>
+                <div style="min-width: 180px;">
+                    <label for="auditDateFrom">From Date</label>
+                    <input type="date" id="auditDateFrom" class="input">
+                </div>
+                <div style="min-width: 180px;">
+                    <label for="auditDateTo">To Date</label>
+                    <input type="date" id="auditDateTo" class="input">
+                </div>
+                <div>
+                    <label>&nbsp;</label>
+                    <button id="searchAuditBtn" class="btn primary">Search</button>
+                </div>
+                <div>
+                    <label>&nbsp;</label>
+                    <button id="clearAuditBtn" class="btn secondary">Clear</button>
+                </div>
+                <div>
+                    <label>&nbsp;</label>
+                    <button id="refreshAuditBtn" class="btn secondary">🔄 Refresh</button>
+                </div>
+                <div>
+                    <label>&nbsp;</label>
+                    <button id="downloadAuditBtn" class="btn secondary">📥 Download CSV</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Audit Log Table -->
+        <section class="card">
+            <div id="auditLogCount" style="margin-bottom: 12px; color: var(--muted); font-size: 14px;">
+                Loading audit log...
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;">Timestamp</th>
+                            <th style="width: 200px;">User Modified</th>
+                            <th style="width: 200px;">Modified By</th>
+                            <th>Changes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditLogTableBody">
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 40px; color: var(--muted);">
+                                Loading audit log...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+
+    <!-- Tab Content: Security Profiles -->
+    <div id="tabContent-securityProfiles" class="tab-content" style="display: none;">
+        <!-- User Permissions Management -->
+        <section class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--text);">User Permissions</h3>
+                <button id="addUserPermissionBtn" class="btn primary">Add User</button>
+            </div>
+            <div id="userPermissionsTableContainer">
+                <div class="muted">Loading users...</div>
+            </div>
+        </section>
+        
+        <!-- Group Permissions Management -->
+        <section class="card" style="margin-top: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; font-size: 18px; font-weight: 600; color: var(--text);">Group Proficiency Permissions</h3>
+                <button id="addGroupPermissionBtn" class="btn primary">Add Group</button>
+            </div>
+            <div id="groupPermissionsTableContainer">
+                <div class="muted">Loading groups...</div>
+            </div>
+        </section>
+    </div>
+</main>
+
+    <!-- Edit Proficiencies Modal -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalUserName" style="margin:0; font-size: 20px; font-weight: 600;">Edit Proficiencies</h2>
+                <span class="close" id="closeModal">&times;</span>
+            </div>
+            <div class="modal-body">
+
+                <h3 style="margin:0 0 12px 0; font-size: 16px; font-weight: 600; color: var(--text);">Proficiencies</h3>
+                <div id="proficienciesContainer" class="proficiencies-container"></div>
+
+                <button id="addProficiencyBtn" class="btn secondary" style="margin-top: 16px;">+ Add Proficiency</button>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelBtn" class="btn secondary">Cancel</button>
+                <button id="saveChangesBtn" class="btn primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Proficiency Modal -->
+    <div id="addProficiencyModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2 style="margin:0; font-size: 20px; font-weight: 600;">Add Proficiency</h2>
+                <span class="close" id="closeAddModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="proficiencySelect">Select Proficiency</label>
+                    <select id="proficiencySelect" class="form-control">
+                        <option value="">Loading proficiencies...</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label for="proficiencyLevelSelect">Proficiency Level</label>
+                    <select id="proficiencyLevelSelect" class="form-control">
+                        <option value="1">Level 1</option>
+                        <option value="2">Level 2</option>
+                        <option value="3" selected>Level 3</option>
+                        <option value="4">Level 4</option>
+                        <option value="5">Level 5</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelAddBtn" class="btn secondary">Cancel</button>
+                <button id="confirmAddBtn" class="btn primary">Add</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Permission Modal -->
+    <div id="userPermissionModal" class="modal" role="dialog" aria-modal="true">
+        <div class="card">
+            <h3 style="margin:0 0 20px 0; font-size: 20px; font-weight: 600; color: var(--text);" id="userPermissionModalTitle">Add User</h3>
+            <div class="fields">
+                <div class="field">
+                    <label for="userEmailInput">User Email</label>
+                    <input id="userEmailInput" type="email" placeholder="e.g., john.doe@example.com" autocomplete="off"/>
+                    <div style="font-size: 12px; color: var(--muted); margin-top: 4px;">Must match the email in Cognito SSO</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 16px; width: 100%;">
+                <label style="display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;">Allowed Regions</label>
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px; align-items: flex-start; text-align: left; padding-left: 0;">
+                    <label style="display: flex; flex-direction: row; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; text-align: left; white-space: nowrap;">
+                        <input type="checkbox" id="userRegionUSEast" value="us-east-1" style="cursor: pointer; transform: scale(0.8); margin: 0; padding: 0;" />
+                        <span style="text-align: left; white-space: nowrap;">US (N. Virginia)</span>
+                    </label>
+                    <label style="display: flex; flex-direction: row; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; text-align: left; white-space: nowrap;">
+                        <input type="checkbox" id="userRegionEUCentral" value="eu-central-1" style="cursor: pointer; transform: scale(0.8); margin: 0; padding: 0;" />
+                        <span style="text-align: left; white-space: nowrap;">EU (Frankfurt)</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="field" style="margin-top: 16px;">
+                <label for="allowedProficienciesUserInput">Allowed Proficiencies</label>
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 8px;">Select the proficiencies this user can access. You can enter proficiency names manually (one per line) or comma-separated.</div>
+                <textarea id="allowedProficienciesUserInput" rows="8" placeholder="Consumer&#10;ProServices&#10;Technical Support&#10;&#10;Or start typing..." style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
+            </div>
+            
+            <div class="row" style="margin-top:12px">
+                <button id="userPermissionSubmit" class="btn primary">Save</button>
+                <button id="userPermissionCancel" class="btn">Cancel</button>
+                <div class="spacer"></div>
+                <div id="userPermissionStatus" class="muted"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Permission Modal -->
+    <div id="groupPermissionModal" class="modal" role="dialog" aria-modal="true">
+        <div class="card">
+            <h3 style="margin:0 0 20px 0; font-size: 20px; font-weight: 600; color: var(--text);" id="groupPermissionModalTitle">Add Group</h3>
+            <div class="fields">
+                <div class="field">
+                    <label for="groupNameInput">Group Name</label>
+                    <input id="groupNameInput" type="text" placeholder="e.g., SBR-Consumer-Team" autocomplete="off"/>
+                </div>
+            </div>
+            <div class="field" style="margin-top: 16px;">
+                <label for="allowedProficienciesInput">Allowed Proficiencies (one per line or comma-separated)</label>
+                <textarea id="allowedProficienciesInput" rows="8" placeholder="Consumer&#10;ProServices&#10;Technical Support&#10;&#10;Leave empty for all proficiencies" style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-family: inherit; font-size: 14px; resize: vertical;"></textarea>
+            </div>
+            <div style="margin-top: 16px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal;">
+                    <input type="checkbox" id="canModifyUsersCheckbox" style="cursor: pointer;" />
+                    <span>Allow group members to modify user proficiencies</span>
+                </label>
+            </div>
+            <div class="row" style="margin-top:12px">
+                <button id="saveGroupPermissionBtn" class="btn primary">Save</button>
+                <button id="cancelGroupPermissionBtn" class="btn">Cancel</button>
+                <div class="spacer"></div>
+                <div id="groupPermissionStatus" class="muted"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        // Theme toggle function
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = current === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            document.getElementById('themeToggle').textContent = newTheme === 'light' ? '🌙' : '☀️';
+        }
+
+        // Load saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.getElementById('themeToggle').textContent = savedTheme === 'light' ? '🌙' : '☀️';
+    </script>
+</body>
+</html>
