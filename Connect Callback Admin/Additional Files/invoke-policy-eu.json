@@ -1,0 +1,10 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "lambda:InvokeFunction",
+      "Resource": "arn:aws:lambda:eu-central-1:YOUR_AWS_ACCOUNT_ID:function:removecallback"
+    }
+  ]
+}

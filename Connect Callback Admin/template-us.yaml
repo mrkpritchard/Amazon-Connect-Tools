@@ -1,0 +1,275 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Callback Admin Portal - US Stack (Main API + CTR Processor + Flow Lambdas + DynamoDB)
+
+Parameters:
+  ConnectInstanceId:
+    Type: String
+    Default: YOUR_CONNECT_INSTANCE_ID
+    Description: Amazon Connect Instance ID (US)
+  EUConnectInstanceId:
+    Type: String
+    Default: YOUR_CONNECT_INSTANCE_ID
+    Description: Amazon Connect Instance ID (EU) - used by admin API for multi-region
+  AllowedOrigins:
+    Type: String
+    Default: https://YOUR_CLOUDFRONT_DOMAIN.cloudfront.net
+    Description: CORS allowed origins
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+    Timeout: 30
+    MemorySize: 256
+
+Resources:
+  # ---- DynamoDB Tables ----
+  CallbackTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Callback
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PhoneNumber
+          AttributeType: S
+        - AttributeName: QueueName
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PhoneNumber
+          KeyType: HASH
+        - AttributeName: QueueName
+          KeyType: RANGE
+
+  CallbackHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: CallbackHistory
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PhoneNumber
+          AttributeType: S
+        - AttributeName: ArchivedAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PhoneNumber
+          KeyType: HASH
+        - AttributeName: ArchivedAt
+          KeyType: RANGE
+
+  # ---- Main Admin Portal API ----
+  CallbackAdminApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: Callback-adminportal-API
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: !Sub "'${AllowedOrigins}'"
+
+  CallbackAdminAPIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: Callback-adminportal-API-CallbackAdminAPI
+      Description: Callback Admin Portal - Main API Lambda
+      CodeUri: Additional Files/Lambda/Main admin portal API lambda/
+      Handler: index.handler
+      MemorySize: 256
+      Timeout: 30
+      Environment:
+        Variables:
+          CALLBACKS_TABLE: Callback
+          HISTORY_TABLE: CallbackHistory
+          CONNECT_INSTANCE_ID: !Ref ConnectInstanceId
+          EU_CONNECT_INSTANCE_ID: !Ref EUConnectInstanceId
+      Events:
+        ProxyApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CallbackAdminApi
+            Path: /{proxy+}
+            Method: ANY
+        RootApi:
+          Type: Api
+          Properties:
+            RestApiId: !Ref CallbackAdminApi
+            Path: /
+            Method: ANY
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+                - dynamodb:Scan
+                - dynamodb:BatchGetItem
+              Resource:
+                - !Sub arn:aws:dynamodb:us-east-1:${AWS::AccountId}:table/*
+                - !Sub arn:aws:dynamodb:eu-central-1:${AWS::AccountId}:table/*
+            - Effect: Allow
+              Action:
+                - connect:DescribeContact
+                - connect:StopContact
+                - connect:SearchContacts
+                - connect:GetContactAttributes
+                - connect:ListAssociatedContacts
+              Resource: '*'
+
+  # ---- US CTR Processor ----
+  CallbackCTRProcessorUS:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: callback-ctr-processor-us
+      Description: Process CTRs from EventBridge for US callback contacts
+      CodeUri: Additional Files/Lambda/US/callback CTR processor/
+      Handler: callback-ctr-processor-US.handler
+      Runtime: nodejs22.x
+      MemorySize: 256
+      Timeout: 30
+      Environment:
+        Variables:
+          CALLBACKS_TABLE: Callback
+          HISTORY_TABLE: CallbackHistory
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !Sub arn:aws:dynamodb:us-east-1:${AWS::AccountId}:table/Callback
+                - !Sub arn:aws:dynamodb:us-east-1:${AWS::AccountId}:table/CallbackHistory
+
+  # EventBridge Rule for US CTR
+  CallbackCTRRuleUS:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: connect-callback-ctr-us
+      Description: Route callback CTRs from US Connect instance to processor
+      State: ENABLED
+      EventPattern:
+        source:
+          - aws.connect
+        detail-type:
+          - Amazon Connect Contact Trace Record
+        detail:
+          InitiationMethod:
+            - CALLBACK
+          InstanceARN:
+            - !Sub arn:aws:connect:us-east-1:${AWS::AccountId}:instance/${ConnectInstanceId}
+      Targets:
+        - Id: CallbackCTRProcessorUS
+          Arn: !GetAtt CallbackCTRProcessorUS.Arn
+
+  CallbackCTRRuleUSPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CallbackCTRProcessorUS
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CallbackCTRRuleUS.Arn
+
+  # ---- US Connect Flow Lambdas ----
+  ReadCallbackUS:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: readcallback
+      Description: Read callback data - invoked by Connect flows (US)
+      CodeUri: Additional Files/Lambda/US/readcallback/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      MemorySize: 1024
+      Timeout: 8
+      Environment:
+        Variables:
+          TableName: Callback
+          HISTORY_TABLE: CallbackHistory
+          HistoryTableName: CallbackHistory
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !Sub arn:aws:dynamodb:us-east-1:${AWS::AccountId}:table/Callback
+                - !Sub arn:aws:dynamodb:us-east-1:${AWS::AccountId}:table/CallbackHistory
+
+  ReadCallbackUSConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ReadCallbackUS
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceArn: !Sub arn:aws:connect:us-east-1:${AWS::AccountId}:instance/${ConnectInstanceId}
+
+  WriteCallbackUS:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: writecallback
+      Description: Write callback data - invoked by Connect flows (US)
+      CodeUri: Additional Files/Lambda/US/writecallback/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      MemorySize: 848
+      Timeout: 8
+      Environment:
+        Variables:
+          TableName: Callback
+          HISTORY_TABLE: CallbackHistory
+          HistoryTableName: CallbackHistory
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+              Resource:
+                - !Sub arn:aws:dynamodb:us-east-1:${AWS::AccountId}:table/Callback
+                - !Sub arn:aws:dynamodb:us-east-1:${AWS::AccountId}:table/CallbackHistory
+
+  WriteCallbackUSConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WriteCallbackUS
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceArn: !Sub arn:aws:connect:us-east-1:${AWS::AccountId}:instance/${ConnectInstanceId}
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL for Callback Admin
+    Value: !Sub https://${CallbackAdminApi}.execute-api.${AWS::Region}.amazonaws.com/prod
+  AdminFunctionName:
+    Description: Main admin API Lambda function name
+    Value: !Ref CallbackAdminAPIFunction
+  CTRProcessorUSName:
+    Description: US CTR Processor Lambda function name
+    Value: !Ref CallbackCTRProcessorUS
+  ReadCallbackUSName:
+    Description: US Read Callback Lambda function name
+    Value: !Ref ReadCallbackUS
+  WriteCallbackUSName:
+    Description: US Write Callback Lambda function name
+    Value: !Ref WriteCallbackUS

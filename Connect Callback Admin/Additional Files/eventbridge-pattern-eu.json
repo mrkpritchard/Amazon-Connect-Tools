@@ -1,0 +1,8 @@
+{
+  "source": ["aws.connect"],
+  "detail-type": ["Amazon Connect Contact Trace Record"],
+  "detail": {
+    "InitiationMethod": ["CALLBACK"],
+    "InstanceARN": ["arn:aws:connect:eu-central-1:YOUR_AWS_ACCOUNT_ID:instance/YOUR_CONNECT_INSTANCE_ID"]
+  }
+}

@@ -1,0 +1,2600 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Callbacks Admin</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <button class="btn secondary" onclick="window.location.href='/index.html'" title="Back to Portal">← Back</button>
+        <div style="flex-shrink: 0;">
+          <img src="/logo.svg" alt="Logo" style="height: 40px; width: auto; display: block;" onerror="this.style.display='none';">
+        </div>
+        <div>
+          <h1>Callback Admin</h1>
+        </div>
+      </div>
+      <div>
+        <button id="themeToggle" class="btn secondary" onclick="toggleTheme()" title="Toggle dark/light mode">
+          <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Sign-in -->
+    <section class="card">
+      <div class="row">
+        <div>
+          <label for="instance">Instance</label>
+          <select id="instance">
+            <option value="us-east-1" selected>US (N. Virginia)</option>
+            <option value="eu-central-1">EU (Frankfurt)</option>
+          </select>
+        </div>
+        <div class="spacer"></div>
+      </div>
+      <div id="status" class="muted" style="margin-top:6px"></div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="tabs" id="tabs" style="display:none">
+      <button class="tab active" data-view="active">Active Callbacks</button>
+      <button class="tab" data-view="history">History</button>
+      <button class="tab" data-view="analytics">Analytics</button>
+    </div>
+
+    <!-- Active Callbacks View -->
+    <div id="activeView" class="view active">
+    <!-- Controls -->
+    <section class="card">
+      <div class="row">
+        <div>
+          <label for="filter">Filter (phone, ID, or Queue contains)</label>
+          <input id="filter" type="text" placeholder="+1, 44, part of ID, or queue name"/>
+        </div>
+        <div>
+          <label for="timezone">Timezone</label>
+          <select id="timezone">
+            <option value="local">Local Time</option>
+            <optgroup label="UTC">
+              <option value="UTC">UTC (Coordinated Universal Time)</option>
+            </optgroup>
+            <optgroup label="North America - US & Canada">
+              <option value="America/New_York">Eastern Time (ET) - New York, Washington DC</option>
+              <option value="America/Chicago">Central Time (CT) - Chicago, Dallas</option>
+              <option value="America/Denver">Mountain Time (MT) - Denver, Phoenix</option>
+              <option value="America/Los_Angeles">Pacific Time (PT) - Los Angeles, Seattle</option>
+              <option value="America/Anchorage">Alaska Time (AKT) - Anchorage</option>
+              <option value="Pacific/Honolulu">Hawaii Time (HST) - Honolulu</option>
+              <option value="America/Toronto">Toronto (ET)</option>
+              <option value="America/Vancouver">Vancouver (PT)</option>
+              <option value="America/Mexico_City">Mexico City (CST)</option>
+            </optgroup>
+            <optgroup label="Europe">
+              <option value="Europe/London">London (GMT/BST)</option>
+              <option value="Europe/Paris">Paris (CET/CEST)</option>
+              <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+              <option value="Europe/Rome">Rome (CET/CEST)</option>
+              <option value="Europe/Madrid">Madrid (CET/CEST)</option>
+              <option value="Europe/Amsterdam">Amsterdam (CET/CEST)</option>
+              <option value="Europe/Brussels">Brussels (CET/CEST)</option>
+              <option value="Europe/Vienna">Vienna (CET/CEST)</option>
+              <option value="Europe/Stockholm">Stockholm (CET/CEST)</option>
+              <option value="Europe/Copenhagen">Copenhagen (CET/CEST)</option>
+              <option value="Europe/Oslo">Oslo (CET/CEST)</option>
+              <option value="Europe/Helsinki">Helsinki (EET/EEST)</option>
+              <option value="Europe/Warsaw">Warsaw (CET/CEST)</option>
+              <option value="Europe/Prague">Prague (CET/CEST)</option>
+              <option value="Europe/Budapest">Budapest (CET/CEST)</option>
+              <option value="Europe/Athens">Athens (EET/EEST)</option>
+              <option value="Europe/Lisbon">Lisbon (WET/WEST)</option>
+              <option value="Europe/Dublin">Dublin (GMT/IST)</option>
+              <option value="Europe/Moscow">Moscow (MSK)</option>
+            </optgroup>
+            <optgroup label="Asia">
+              <option value="Asia/Tokyo">Tokyo (JST)</option>
+              <option value="Asia/Shanghai">Shanghai (CST)</option>
+              <option value="Asia/Hong_Kong">Hong Kong (HKT)</option>
+              <option value="Asia/Singapore">Singapore (SGT)</option>
+              <option value="Asia/Seoul">Seoul (KST)</option>
+              <option value="Asia/Taipei">Taipei (CST)</option>
+              <option value="Asia/Bangkok">Bangkok (ICT)</option>
+              <option value="Asia/Jakarta">Jakarta (WIB)</option>
+              <option value="Asia/Manila">Manila (PHT)</option>
+              <option value="Asia/Kuala_Lumpur">Kuala Lumpur (MYT)</option>
+              <option value="Asia/Dubai">Dubai (GST)</option>
+              <option value="Asia/Riyadh">Riyadh (AST)</option>
+              <option value="Asia/Kolkata">Mumbai, New Delhi (IST)</option>
+              <option value="Asia/Karachi">Karachi (PKT)</option>
+              <option value="Asia/Dhaka">Dhaka (BST)</option>
+              <option value="Asia/Tehran">Tehran (IRST)</option>
+              <option value="Asia/Jerusalem">Jerusalem (IST/IDT)</option>
+            </optgroup>
+            <optgroup label="Australia & Pacific">
+              <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+              <option value="Australia/Melbourne">Melbourne (AEST/AEDT)</option>
+              <option value="Australia/Brisbane">Brisbane (AEST)</option>
+              <option value="Australia/Perth">Perth (AWST)</option>
+              <option value="Australia/Adelaide">Adelaide (ACST/ACDT)</option>
+              <option value="Pacific/Auckland">Auckland (NZST/NZDT)</option>
+              <option value="Pacific/Fiji">Fiji (FJT)</option>
+            </optgroup>
+            <optgroup label="South America">
+              <option value="America/Sao_Paulo">São Paulo (BRT/BRST)</option>
+              <option value="America/Buenos_Aires">Buenos Aires (ART)</option>
+              <option value="America/Lima">Lima (PET)</option>
+              <option value="America/Bogota">Bogotá (COT)</option>
+              <option value="America/Santiago">Santiago (CLT/CLST)</option>
+              <option value="America/Caracas">Caracas (VET)</option>
+            </optgroup>
+            <optgroup label="Africa">
+              <option value="Africa/Cairo">Cairo (EET/EEST)</option>
+              <option value="Africa/Johannesburg">Johannesburg (SAST)</option>
+              <option value="Africa/Lagos">Lagos (WAT)</option>
+              <option value="Africa/Nairobi">Nairobi (EAT)</option>
+              <option value="Africa/Casablanca">Casablanca (WET/WEST)</option>
+            </optgroup>
+            <optgroup label="Middle East">
+              <option value="Asia/Dubai">Dubai (GST)</option>
+              <option value="Asia/Riyadh">Riyadh (AST)</option>
+              <option value="Asia/Kuwait">Kuwait (AST)</option>
+              <option value="Asia/Bahrain">Bahrain (AST)</option>
+              <option value="Asia/Qatar">Doha (AST)</option>
+              <option value="Asia/Tehran">Tehran (IRST)</option>
+              <option value="Asia/Jerusalem">Jerusalem (IST/IDT)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="spacer"></div>
+        <div>
+          <button id="cleanupBtn" class="btn" title="Check Amazon Connect and move completed callbacks to history">Sync Database</button>
+          <button id="refreshBtn" class="btn">Refresh</button>
+          <button id="loadMoreBtn" class="btn" disabled>Load more</button>
+        </div>
+      </div>
+      <div class="muted" style="margin-top:6px">Showing pending callbacks only.</div>
+    </section>
+
+    <!-- Table -->
+    <section class="card">
+      <div style="overflow:auto">  
+<table id="callbacks-table" class="table">
+  <thead>
+    <tr>
+      <th class="sortable" data-column="id">Inbound ID</th>        <!-- inbound/original -->
+      <th class="sortable" data-column="phone">Customer Number</th>
+      <th class="sortable" data-column="created">Created</th>
+      <th class="sortable" data-column="queue">Inbound Queue</th>
+      <th class="sortable" data-column="cbqueue">Callback Queue</th>
+      <th class="sortable" data-column="holdtime">Delay</th>
+      <th class="sortable" data-column="scheduled">Scheduled for...</th>
+	  <th class="sortable" data-column="age">Age</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody id="tbody">
+    <tr id="emptyRow"><td colspan="9" class="muted"></td></tr>
+  </tbody>
+</table>
+
+      </div>
+    </section>
+    </div>
+
+    <!-- History View -->
+    <div id="historyView" class="view">
+    <!-- Controls -->
+    <section class="card">
+      <div class="row">
+        <div>
+          <label for="historyFilter">Filter (phone, ID, or Queue contains)</label>
+          <input id="historyFilter" type="text" placeholder="+1, 44, part of ID, or queue name"/>
+        </div>
+        <div>
+          <label for="historyTimezone">Timezone</label>
+          <select id="historyTimezone">
+            <option value="local">Local Time</option>
+            <optgroup label="UTC">
+              <option value="UTC">UTC (Coordinated Universal Time)</option>
+            </optgroup>
+            <optgroup label="North America - US & Canada">
+              <option value="America/New_York">Eastern Time (ET) - New York, Washington DC</option>
+              <option value="America/Chicago">Central Time (CT) - Chicago, Dallas</option>
+              <option value="America/Denver">Mountain Time (MT) - Denver, Phoenix</option>
+              <option value="America/Los_Angeles">Pacific Time (PT) - Los Angeles, Seattle</option>
+              <option value="America/Anchorage">Alaska Time (AKT) - Anchorage</option>
+              <option value="Pacific/Honolulu">Hawaii Time (HST) - Honolulu</option>
+              <option value="America/Toronto">Toronto (ET)</option>
+              <option value="America/Vancouver">Vancouver (PT)</option>
+              <option value="America/Mexico_City">Mexico City (CST)</option>
+            </optgroup>
+            <optgroup label="Europe">
+              <option value="Europe/London">London (GMT/BST)</option>
+              <option value="Europe/Paris">Paris (CET/CEST)</option>
+              <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+              <option value="Europe/Rome">Rome (CET/CEST)</option>
+              <option value="Europe/Madrid">Madrid (CET/CEST)</option>
+              <option value="Europe/Amsterdam">Amsterdam (CET/CEST)</option>
+              <option value="Europe/Brussels">Brussels (CET/CEST)</option>
+              <option value="Europe/Vienna">Vienna (CET/CEST)</option>
+              <option value="Europe/Stockholm">Stockholm (CET/CEST)</option>
+              <option value="Europe/Copenhagen">Copenhagen (CET/CEST)</option>
+              <option value="Europe/Oslo">Oslo (CET/CEST)</option>
+              <option value="Europe/Helsinki">Helsinki (EET/EEST)</option>
+              <option value="Europe/Warsaw">Warsaw (CET/CEST)</option>
+              <option value="Europe/Prague">Prague (CET/CEST)</option>
+              <option value="Europe/Budapest">Budapest (CET/CEST)</option>
+              <option value="Europe/Athens">Athens (EET/EEST)</option>
+              <option value="Europe/Lisbon">Lisbon (WET/WEST)</option>
+              <option value="Europe/Dublin">Dublin (GMT/IST)</option>
+              <option value="Europe/Moscow">Moscow (MSK)</option>
+            </optgroup>
+            <optgroup label="Asia">
+              <option value="Asia/Tokyo">Tokyo (JST)</option>
+              <option value="Asia/Shanghai">Shanghai (CST)</option>
+              <option value="Asia/Hong_Kong">Hong Kong (HKT)</option>
+              <option value="Asia/Singapore">Singapore (SGT)</option>
+              <option value="Asia/Seoul">Seoul (KST)</option>
+              <option value="Asia/Taipei">Taipei (CST)</option>
+              <option value="Asia/Bangkok">Bangkok (ICT)</option>
+              <option value="Asia/Jakarta">Jakarta (WIB)</option>
+              <option value="Asia/Manila">Manila (PHT)</option>
+              <option value="Asia/Kuala_Lumpur">Kuala Lumpur (MYT)</option>
+              <option value="Asia/Dubai">Dubai (GST)</option>
+              <option value="Asia/Riyadh">Riyadh (AST)</option>
+              <option value="Asia/Kolkata">Mumbai, New Delhi (IST)</option>
+              <option value="Asia/Karachi">Karachi (PKT)</option>
+              <option value="Asia/Dhaka">Dhaka (BST)</option>
+              <option value="Asia/Tehran">Tehran (IRST)</option>
+              <option value="Asia/Jerusalem">Jerusalem (IST/IDT)</option>
+            </optgroup>
+            <optgroup label="Australia & Pacific">
+              <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+              <option value="Australia/Melbourne">Melbourne (AEST/AEDT)</option>
+              <option value="Australia/Brisbane">Brisbane (AEST)</option>
+              <option value="Australia/Perth">Perth (AWST)</option>
+              <option value="Australia/Adelaide">Adelaide (ACST/ACDT)</option>
+              <option value="Pacific/Auckland">Auckland (NZST/NZDT)</option>
+              <option value="Pacific/Fiji">Fiji (FJT)</option>
+            </optgroup>
+            <optgroup label="South America">
+              <option value="America/Sao_Paulo">São Paulo (BRT/BRST)</option>
+              <option value="America/Buenos_Aires">Buenos Aires (ART)</option>
+              <option value="America/Lima">Lima (PET)</option>
+              <option value="America/Bogota">Bogotá (COT)</option>
+              <option value="America/Santiago">Santiago (CLT/CLST)</option>
+              <option value="America/Caracas">Caracas (VET)</option>
+            </optgroup>
+            <optgroup label="Africa">
+              <option value="Africa/Cairo">Cairo (EET/EEST)</option>
+              <option value="Africa/Johannesburg">Johannesburg (SAST)</option>
+              <option value="Africa/Lagos">Lagos (WAT)</option>
+              <option value="Africa/Nairobi">Nairobi (EAT)</option>
+              <option value="Africa/Casablanca">Casablanca (WET/WEST)</option>
+            </optgroup>
+            <optgroup label="Middle East">
+              <option value="Asia/Dubai">Dubai (GST)</option>
+              <option value="Asia/Riyadh">Riyadh (AST)</option>
+              <option value="Asia/Kuwait">Kuwait (AST)</option>
+              <option value="Asia/Bahrain">Bahrain (AST)</option>
+              <option value="Asia/Qatar">Doha (AST)</option>
+              <option value="Asia/Tehran">Tehran (IRST)</option>
+              <option value="Asia/Jerusalem">Jerusalem (IST/IDT)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="spacer"></div>
+        <div>
+          <button id="historyExportCSVBtn" class="btn" title="Export to CSV">Export CSV</button>
+          <button id="historyExportXLSXBtn" class="btn" title="Export to Excel">Export Excel</button>
+          <button id="historyRefreshBtn" class="btn">Refresh</button>
+        </div>
+      </div>
+      <div class="muted" style="margin-top:8px">Showing completed callbacks from history.</div>
+    </section>
+
+    <!-- History Table -->
+    <section class="card">
+      <div style="overflow-x:auto; overflow-y:visible;">  
+<table id="history-table" class="table">
+  <thead>
+    <tr>
+      <th class="sortable" data-column="id">Inbound ID</th>
+      <th class="sortable" data-column="phone">Customer Number</th>
+      <th class="sortable" data-column="completed">Completed</th>
+      <th class="sortable" data-column="queue">Inbound Queue</th>
+      <th class="sortable" data-column="cbqueue">Callback Queue</th>
+      <th class="sortable" data-column="holdtime">Delay</th>
+      <th class="sortable" data-column="timeinqueue">Time in Q</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="historyTbody">
+    <tr id="historyEmptyRow"><td colspan="8" class="muted">No history found.</td></tr>
+  </tbody>
+</table>
+      </div>
+      <div style="text-align:center; padding:20px 0;">
+        <button id="loadMoreHistoryBtn" class="btn" disabled>Load more</button>
+      </div>
+    </section>
+    </div>
+
+    <!-- Analytics View -->
+    <div id="analyticsView" class="view">
+      <!-- Analytics Controls -->
+      <section class="card">
+        <h3 style="margin:0 0 16px 0; font-size: 18px; font-weight: 600; color: var(--text);">Queue Analytics</h3>
+        <div class="row">
+          <div style="position: relative; display: inline-block;">
+            <label for="analyticsQueueSelect" style="font-weight: 400 !important;">Select Queues (select multiple)</label>
+            <div style="position: relative;">
+              <button id="analyticsQueueDropdownBtn" type="button" class="btn" style="width: auto; min-width: 250px; text-align: left; justify-content: space-between; display: flex; align-items: center;">
+                <span id="analyticsQueueDropdownText">Select queues...</span>
+                <span style="margin-left: auto;">▼</span>
+              </button>
+              <div id="analyticsQueueDropdown" style="display: none; position: absolute; top: 100%; left: 0; margin-top: 4px; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 4px 16px var(--shadow); z-index: 1000; max-height: 300px; overflow-y: auto; padding: 8px; width: max-content; min-width: 200px; max-width: 500px;">
+                <div id="analyticsQueueCheckboxes" style="display: flex; flex-direction: column; gap: 6px; text-align: left; width: max-content;">
+                  <div class="muted">Loading queues...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 16px;">
+          <div>
+            <label for="analyticsChartType">Chart Type</label>
+            <select id="analyticsChartType">
+              <option value="bar">Bar Chart</option>
+              <option value="pie">Pie Chart</option>
+              <option value="table">Table</option>
+            </select>
+          </div>
+          <div>
+            <label for="analyticsDateRange">Date Range</label>
+            <select id="analyticsDateRange">
+              <option value="today">Today</option>
+              <option value="yesterday">Yesterday</option>
+              <option value="currentWeek">Current Week</option>
+              <option value="lastWeek">Last Week</option>
+              <option value="currentMonth">Current Month</option>
+              <option value="lastMonth">Last Month</option>
+              <option value="custom">Custom Range</option>
+            </select>
+          </div>
+          <div id="analyticsCustomDateRange" style="display: none; align-items: flex-end; gap: 12px;">
+            <div>
+              <label for="analyticsStartDate" style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--muted);">Start Date</label>
+              <input type="date" id="analyticsStartDate" style="min-width: 150px;">
+            </div>
+            <div>
+              <label for="analyticsEndDate" style="display: block; margin-bottom: 4px; font-size: 12px; color: var(--muted);">End Date</label>
+              <input type="date" id="analyticsEndDate" style="min-width: 150px;">
+            </div>
+          </div>
+          <div class="spacer"></div>
+          <div>
+            <button id="analyticsRefreshBtn" class="btn primary">Refresh Data</button>
+            <button id="analyticsSelectAllBtn" class="btn">Select All</button>
+            <button id="analyticsDeselectAllBtn" class="btn">Deselect All</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Analytics Results -->
+      <section class="card" id="analyticsResults" style="display: none;">
+        <h3 style="margin:0 0 20px 0; font-size: 18px; font-weight: 600; color: var(--text);">Statistics</h3>
+        
+        <!-- Summary Stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div style="padding: 16px; background: var(--bg-secondary); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Total Callbacks</div>
+            <div id="analyticsTotalCallbacks" style="font-size: 28px; font-weight: 600; color: var(--accent);">0</div>
+          </div>
+          <div style="padding: 16px; background: var(--bg-secondary); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Average Time in Queue</div>
+            <div id="analyticsAvgTime" style="font-size: 28px; font-weight: 600; color: var(--accent);">0</div>
+          </div>
+          <div style="padding: 16px; background: var(--bg-secondary); border-radius: 6px;">
+            <div style="font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;">Selected Queues</div>
+            <div id="analyticsSelectedQueues" style="font-size: 28px; font-weight: 600; color: var(--accent);">0</div>
+          </div>
+        </div>
+
+        <!-- Chart -->
+        <div style="margin-top: 24px;">
+          <h4 id="analyticsChartTitle" style="margin:0 0 16px 0; font-size: 16px; font-weight: 600; color: var(--text);">Distribution by Queue</h4>
+          <div id="analyticsChartContainer" style="position: relative; height: 400px; max-width: 100%; margin: 0 auto;">
+            <canvas id="analyticsChart"></canvas>
+          </div>
+          <div id="analyticsTableContainer" style="display: none; overflow-x: auto;">
+            <table id="analyticsTable" class="table" style="margin-top: 0;">
+              <thead>
+                <tr>
+                  <th class="sortable">Queue / Date</th>
+                  <th class="sortable" style="text-align: right;">Amount</th>
+                  <th class="sortable" style="text-align: right;">Percentage</th>
+                </tr>
+              </thead>
+              <tbody id="analyticsTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- Confirmation Dialog -->
+  <div id="confirmDialog" class="dialog-overlay">
+    <div class="dialog">
+      <h3>Confirm Removal</h3>
+      <p>Are you sure you want to end this callback?</p>
+      <div class="dialog-buttons">
+        <button id="confirmCancelBtn" class="btn">Cancel</button>
+        <button id="confirmOkBtn" class="btn danger">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart.js for Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- SheetJS for Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+  // ===== Configuration =====
+  // Region-specific configurations
+  const REGION_CONFIG = {
+    'us-east-1': {
+      name: 'US (N. Virginia)',
+      apiBaseUrl: 'https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod',
+      connectBaseUrl: 'https://your-connect-alias-us-east-1.my.connect.aws/contact-trace-records/details',
+      // Lambda function names for Connect flows (invoked by Connect, not by admin UI)
+      readCallbackLambda: 'readcallback',
+      writeCallbackLambda: 'writecallback',
+      removeCallbackLambda: 'removecallback'
+    },
+    'eu-central-1': {
+      name: 'EU (Frankfurt)',
+      // Reuse the same API since it's the same portal
+      apiBaseUrl: 'https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod',
+      // Only the Connect URL is region-specific
+      connectBaseUrl: 'https://your-connect-alias-eu-central-1.my.connect.aws/contact-trace-records/details',
+      // Lambda function names for Connect flows (invoked by Connect flows in Frankfurt)
+      readCallbackLambda: 'readcallback',
+      writeCallbackLambda: 'writecallback',
+      removeCallbackLambda: 'removecallback'
+    }
+  };
+
+  // Get selected region from localStorage or default to us-east-1
+  let selectedRegion = localStorage.getItem('selectedRegion') || 'us-east-1';
+  
+  // Get current region configuration
+  function getCurrentRegionConfig() {
+    return REGION_CONFIG[selectedRegion] || REGION_CONFIG['us-east-1'];
+  }
+
+  // Update configuration based on selected region
+  function updateRegionConfig(region) {
+    selectedRegion = region;
+    localStorage.setItem('selectedRegion', region);
+    const config = getCurrentRegionConfig();
+    
+    // Update API endpoints
+    const API_BASE_URL = config.apiBaseUrl;
+    const LIST_ENDPOINT = `${API_BASE_URL}/callbacks`;
+    const HISTORY_ENDPOINT = `${API_BASE_URL}/callbacks/history`;
+    
+    // Store in global scope for use in functions
+    window.API_BASE_URL = API_BASE_URL;
+    window.LIST_ENDPOINT = LIST_ENDPOINT;
+    window.HISTORY_ENDPOINT = HISTORY_ENDPOINT;
+    window.CONNECT_BASE_URL = config.connectBaseUrl;
+    
+    return config;
+  }
+
+  // Initialize with default region
+  const defaultConfig = updateRegionConfig(selectedRegion);
+  const API_BASE_URL = defaultConfig.apiBaseUrl;
+  const LIST_ENDPOINT = `${API_BASE_URL}/callbacks`;
+  const HISTORY_ENDPOINT = `${API_BASE_URL}/callbacks/history`;
+
+function getAgeString(epoch) {
+  const now = Math.floor(Date.now() / 1000); // current time in seconds
+  const diff = now - epoch;
+  if (diff < 60) return `${diff} sec`;
+  if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} hr`;
+  return `${Math.floor(diff / 86400)} days`;
+}
+
+  // ===== State & helpers =====
+  let idToken = 'standalone'; let nextToken = null; let historyNextToken = null;
+  let historyDisplayedCount = 0; // Track how many items are currently displayed
+  let currentView = 'active';
+  let autoRefreshInterval = null; // For automatic 30-second refresh
+  let selectedTimezone = localStorage.getItem('timezone') || 'local';
+  let selectedHistoryTimezone = localStorage.getItem('historyTimezone') || 'local';
+  let userGroups = [];
+  let userIsAdmin = false; // Renamed from userIsAdmin to avoid conflict with common-auth-check.js function
+  let allowedQueues = null; // null means all queues (admin), array means specific queues
+  let allowedRegions = null; // null means all regions (admin), array means specific regions
+
+  const $ = (id) => document.getElementById(id);
+  const setStatus = (m, bad=false) => { const el=$('status'); if(!el) return; el.textContent=m||''; el.style.color = bad ? 'var(--danger)' : 'var(--muted)'; };
+
+  const toggleAuthUI = (signedIn) => {
+    // Show/hide tabs based on view state
+    const tabsEl = $('tabs');
+    if (tabsEl) tabsEl.style.display = signedIn ? 'flex' : 'none';
+  };
+
+  // Frontend filtering as backup (case-insensitive)
+  // Note: Backend already filters, so this is just a safety check
+  // If allowedQueues is not properly initialized, trust the backend and don't filter
+  function filterByAllowedQueues(items) {
+    if (allowedQueues === null) return items; // Admin sees all
+    // If allowedQueues is undefined or not yet loaded, trust backend filtering
+    if (allowedQueues === undefined) {
+      console.log('[filterByAllowedQueues] allowedQueues not initialized, trusting backend filtering');
+      return items;
+    }
+    // Empty array means backend has already filtered appropriately - trust backend
+    if (Array.isArray(allowedQueues) && allowedQueues.length === 0) {
+      console.log('[filterByAllowedQueues] Empty allowed queues array, trusting backend filtering (backend already filtered)');
+      return items; // Trust backend filtering
+    }
+    if (!Array.isArray(allowedQueues)) {
+      console.log('[filterByAllowedQueues] allowedQueues is not an array, trusting backend filtering');
+      return items;
+    }
+    
+    // Normalize for case-insensitive comparison
+    const normalizedAllowed = allowedQueues.map(q => q.trim().toLowerCase());
+    
+    const filtered = items.filter(item => {
+      const queueName = (item.QueueName || item.queueName || item.queue || '').trim();
+      const normalizedQueue = queueName.toLowerCase();
+      const isAllowed = allowedQueues.includes(queueName) || normalizedAllowed.includes(normalizedQueue);
+      return isAllowed;
+    });
+    
+    console.log('[filterByAllowedQueues] Frontend filtering:', {
+      originalCount: items.length,
+      filteredCount: filtered.length,
+      allowedQueues: allowedQueues,
+      sampleQueues: items.slice(0, 5).map(item => item.QueueName || item.queueName || item.queue || 'N/A')
+    });
+    
+    return filtered;
+  }
+
+  // Auto-refresh functionality for active callbacks
+  function startAutoRefresh() {
+    if (autoRefreshInterval) return; // Already running
+    console.log('[AutoRefresh] Starting 5-minute auto-refresh');
+    autoRefreshInterval = setInterval(() => {
+      // Only refresh if user is signed in and viewing active callbacks
+      if (idToken && currentView === 'active') {
+        console.log('[AutoRefresh] Auto-refreshing active callbacks');
+        nextToken = null; // Reset pagination
+        clearTable(); // Clear existing rows
+        fetchCallbacks(true, true); // initial=true (full refresh), quiet=true (no status message)
+      }
+    }, 300000); // 5 minutes (300 seconds)
+  }
+
+  function stopAutoRefresh() {
+    if (autoRefreshInterval) {
+      console.log('[AutoRefresh] Stopping auto-refresh');
+      clearInterval(autoRefreshInterval);
+      autoRefreshInterval = null;
+    }
+  }
+
+  const clearTable = () => {
+    const tb = $('tbody');
+    if (!tb) return;
+    tb.innerHTML = '';
+    const tr = document.createElement('tr'); tr.id = 'emptyRow';
+    const td = document.createElement('td');
+    td.colSpan = 10; td.className='muted'; td.textContent='No callbacks found.';
+    tr.appendChild(td); tb.appendChild(tr);
+    nextToken = null; const lm=$('loadMoreBtn'); if(lm) lm.disabled = true;
+  };
+
+  const escapeHtml = (s) => String(s).replaceAll('&', '&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');
+
+  // Generate Amazon Connect contact trace link (uses current region's base URL)
+  function createContactLink(contactId) {
+    if (!contactId) return '';
+    const connectBaseUrl = window.CONNECT_BASE_URL || getCurrentRegionConfig().connectBaseUrl;
+    return `${connectBaseUrl}/${contactId}`;
+  }
+
+  // Format date/time with timezone support
+  function formatDateTime(date, timezone = 'local') {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d.getTime())) return '';
+    
+    const options = {
+      timeZone: timezone === 'local' ? undefined : timezone,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: timezone === 'local' ? undefined : 'numeric'
+    };
+    
+    const datePart = d.toLocaleDateString(undefined, { ...options, hour: undefined, minute: undefined, second: undefined });
+    const timePart = d.toLocaleTimeString(undefined, { ...options, year: undefined, month: undefined, day: undefined });
+    
+    return { datePart, timePart };
+  }
+
+  // Render rows: ID, Phone, Created, Queue
+  const appendRows = (items=[]) => {
+    const tb = $('tbody'); if(!tb) return;
+    const empty = $('emptyRow'); if (empty) empty.remove();
+
+    for (const it of items) {
+      const inboundId = it.ContactId || it.id || it.callbackId || it.pk || '';
+      const phone     = it.PhoneNumber || it.phoneNumber || it.phone || '';
+      const queue     = it.QueueName || it.queueName || it.queue || '';
+      const cbqueue   = it.CBQueue || it.cbqueue || '';
+      const holdTime  = it.HoldTime || it.holdTime || '';
+      // Attempt count: prefer FinalAttemptNumber, then common variants, default to 0 (no attempts yet)
+      const attemptNumber = (it.FinalAttemptNumber !== undefined
+        ? it.FinalAttemptNumber
+        : (it.AttemptNumber ?? it.attemptNumber ?? it.AttemptCount ?? it.Attempts ?? 0));
+      const maxRetries = it.MaxRetries || 3;
+      // Check multiple possible field names for scheduled time (case variations)
+      const scheduledTime = it.ScheduledTime || it.scheduledTime || it.ScheduledTimestamp || it.scheduledTimestamp || null;
+      const cbId      = it.CallbackContactId || '';
+      // Format created date/time to show date and time on separate lines
+      let createdDate = null;
+      if (it.timeStamp) {
+        const t = Date.parse(it.timeStamp);
+        if (!Number.isNaN(t)) createdDate = new Date(t);
+      } else if (it.epoch) {
+        createdDate = new Date(Number(it.epoch) * 1000);
+      } else if (it.dateStamp || it.timeStamp) {
+        const combined = `${it.dateStamp ?? ''} ${it.timeStamp ?? ''}`.trim();
+        if (combined) {
+          const dt = new Date(combined);
+          if (!Number.isNaN(dt.getTime())) createdDate = dt;
+        }
+      } else if (it.createdAt || it.created || it.timestamp) {
+        const v = it.createdAt || it.created || it.timestamp;
+        const dt = new Date(v);
+        if (!Number.isNaN(dt.getTime())) createdDate = dt;
+      }
+      
+      let created = '';
+      if (createdDate) {
+        const formatted = formatDateTime(createdDate, selectedTimezone);
+        created = `<div style="line-height:1.3;">${escapeHtml(formatted.datePart)}<br><span style="font-size:0.9em; opacity:0.8;">${escapeHtml(formatted.timePart)}</span></div>`;
+      }
+      
+      // Format scheduled time if available - same format as Created column
+      let scheduledTimeFormatted = '';
+      if (scheduledTime) {
+        try {
+          const scheduledDate = new Date(scheduledTime);
+          if (!Number.isNaN(scheduledDate.getTime())) {
+            // Format same way as Created column - date and time on separate lines with timezone conversion
+            const formatted = formatDateTime(scheduledDate, selectedTimezone);
+            scheduledTimeFormatted = `<div style="line-height:1.3;">${escapeHtml(formatted.datePart)}<br><span style="font-size:0.9em; opacity:0.8;">${escapeHtml(formatted.timePart)}</span></div>`;
+            
+            // Debug logging for scheduled time formatting
+            if (Math.random() < 0.1) {
+              console.log('[frontend] Scheduled time formatting', {
+                rawScheduledTime: scheduledTime,
+                scheduledDateUTC: scheduledDate.toISOString(),
+                scheduledDateUTCHours: scheduledDate.getUTCHours(),
+                scheduledDateUTCMinutes: scheduledDate.getUTCMinutes(),
+                scheduledDateUTCSeconds: scheduledDate.getUTCSeconds(),
+                selectedTimezone: selectedTimezone,
+                formattedDate: formatted.datePart,
+                formattedTime: formatted.timePart,
+                createdTime: it.timeStamp || (it.epoch ? new Date(Number(it.epoch) * 1000).toISOString() : 'N/A'),
+                phoneNumber: phone
+              });
+            }
+          } else {
+            console.warn('Scheduled time is not a valid date:', scheduledTime);
+            scheduledTimeFormatted = '<span class="muted" style="font-size: 11px;">-</span>';
+          }
+        } catch (e) {
+          console.warn('Error formatting scheduled time:', e, scheduledTime);
+          scheduledTimeFormatted = '<span class="muted" style="font-size: 11px;">-</span>';
+        }
+      } else {
+        // Debug: log when scheduled time is missing (log more frequently to debug)
+        if (Math.random() < 0.3 && cbId) {
+          console.log('[frontend] Scheduled time missing for callback:', {
+            callbackContactId: cbId,
+            phoneNumber: phone,
+            itemKeys: Object.keys(it),
+            hasScheduledTime: 'ScheduledTime' in it,
+            hasScheduledTimestamp: 'ScheduledTimestamp' in it,
+            scheduledTimeValue: it.ScheduledTime,
+            scheduledtimeValue: it.scheduledTime,
+            scheduledTimestampValue: it.ScheduledTimestamp,
+            scheduledtimestampValue: it.scheduledTimestamp,
+            fullItem: it
+          });
+        }
+      }
+      
+	  const age = (it.ageText && typeof it.ageText === 'string')
+		? it.ageText
+		: (it.epoch ? getAgeString(Number(it.epoch)) : '');
+
+      
+	const cbCellHtml = cbId
+		? `<code><a href="${createContactLink(cbId)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none;">${escapeHtml(cbId)}</a></code>`
+		: `<span class="muted" style="font-size: 12px;">Checking...</span>`;
+
+      const contactIdLink = inboundId 
+        ? `<code><a href="${createContactLink(inboundId)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none;">${escapeHtml(inboundId)}</a></code>`
+        : '<code></code>';
+
+      const tr = document.createElement('tr');
+	  tr.setAttribute('data-phone', phone || '');
+	  tr.setAttribute('data-queue', queue || '');
+      if (cbId) {
+        tr.setAttribute('data-callback-id', cbId);
+      }
+      if (inboundId) {
+        tr.setAttribute('data-inbound-id', inboundId);
+      }
+
+      // Action buttons - only show if callback ID exists
+      const actionButtonsHtml = cbId
+        ? `<button class="btn-remove" data-callback-id="${escapeHtml(cbId)}" title="Remove this callback">Remove</button>`
+        : '<span class="muted" style="font-size: 11px;">-</span>';
+
+      tr.innerHTML = `
+        <td>${contactIdLink}</td>
+        <td>${phone ? `<span class="tag">${escapeHtml(phone)}</span>` : ''}</td>
+        <td>${created}</td>
+        <td>${queue ? `<span class="tag">${escapeHtml(queue)}</span>` : ''}</td>
+        <td>${cbqueue}</td>
+        <td>${holdTime}</td>
+        <td>${scheduledTimeFormatted || '<span class="muted" style="font-size: 11px;">-</span>'}</td>
+		<td>${escapeHtml(age)}</td>
+        <td style="text-align: center; padding: 8px;">${actionButtonsHtml}</td>
+        `;
+      tb.appendChild(tr);
+      
+      // Attach click handlers to action buttons if they exist
+      if (cbId) {
+        const removeBtn = tr.querySelector('.btn-remove');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleRemoveCallback(cbId, tr);
+          });
+        }
+      }
+    }
+  };
+
+  // ===== Remove Callback Handler =====
+  let pendingRemoveCallbackId = null;
+  let pendingRemoveRow = null;
+
+  function handleRemoveCallback(callbackId, row) {
+    if (!idToken) {
+      setStatus('Please sign in.', true);
+      return;
+    }
+
+    pendingRemoveCallbackId = callbackId;
+    pendingRemoveRow = row;
+    
+    // Show confirmation dialog
+    const dialog = $('confirmDialog');
+    if (dialog) {
+      dialog.classList.add('show');
+    }
+  }
+
+  // Dialog button handlers (will be initialized in DOMContentLoaded)
+  function initDialogHandlers() {
+    $('confirmCancelBtn')?.addEventListener('click', () => {
+      const dialog = $('confirmDialog');
+      if (dialog) {
+        dialog.classList.remove('show');
+      }
+      pendingRemoveCallbackId = null;
+      pendingRemoveRow = null;
+    });
+
+    $('confirmOkBtn')?.addEventListener('click', async () => {
+      if (!pendingRemoveCallbackId || !idToken) {
+        const dialog = $('confirmDialog');
+        if (dialog) {
+          dialog.classList.remove('show');
+        }
+        return;
+      }
+
+      const callbackId = pendingRemoveCallbackId;
+      const row = pendingRemoveRow;
+      
+      // Hide dialog
+      const dialog = $('confirmDialog');
+      if (dialog) {
+        dialog.classList.remove('show');
+      }
+
+      // Disable the button
+      const removeBtn = row?.querySelector('.btn-remove');
+      if (removeBtn) {
+        removeBtn.disabled = true;
+        removeBtn.textContent = 'Removing...';
+      }
+
+      setStatus('Stopping callback in Amazon Connect...');
+
+      try {
+        const apiBaseUrl = window.API_BASE_URL || API_BASE_URL;
+        const url = `${apiBaseUrl}/callbacks/${encodeURIComponent(callbackId)}/stop?region=${selectedRegion}`;
+        
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 
+            'Accept': 'application/json' 
+          },
+          mode: 'cors'
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`API ${res.status}: ${errorText}`);
+        }
+
+        const data = await res.json();
+        setStatus(`Callback removed successfully. ${data.message || ''}`);
+
+        // Remove the row from the table
+        if (row && row.parentNode) {
+          row.remove();
+        }
+
+        // Refresh the table to ensure consistency
+        nextToken = null;
+        clearTable();
+        fetchCallbacks(true);
+      } catch (err) {
+        console.error('[handleRemoveCallback] Error:', err);
+        setStatus(err?.message || 'Failed to remove callback', true);
+        
+        // Re-enable the button on error
+        if (removeBtn) {
+          removeBtn.disabled = false;
+          removeBtn.textContent = 'Remove';
+        }
+      } finally {
+        pendingRemoveCallbackId = null;
+        pendingRemoveRow = null;
+      }
+    });
+
+    // Close dialog when clicking overlay
+    $('confirmDialog')?.addEventListener('click', (e) => {
+      if (e.target.id === 'confirmDialog') {
+        e.target.classList.remove('show');
+        pendingRemoveCallbackId = null;
+        pendingRemoveRow = null;
+      }
+    });
+  }
+
+  // ===== Init (standalone, no authentication) =====
+  async function restoreSession(){
+    toggleAuthUI(true);
+    setStatus('');
+    // Auto-sync database on page load to clean up completed callbacks
+    syncDatabaseSilently().catch(() => {});
+    clearTable();
+    fetchCallbacks(true).catch(()=>{});
+    startAutoRefresh();
+    return true;
+  }
+
+  // ===== Data calls =====
+  async function fetchCallbacks(initial=true, quiet=false){
+    if(!idToken){ setStatus('Please sign in.', true); return; }
+    const limit = 25; // Fixed page size
+    const q = ($('filter')?.value || '').trim();
+
+    // Use current region's endpoint
+    const listEndpoint = window.LIST_ENDPOINT || LIST_ENDPOINT;
+    const url = new URL(listEndpoint);
+    url.searchParams.set('limit', String(limit));
+    // Add region parameter so Lambda knows which tables to use
+    url.searchParams.set('region', selectedRegion);
+    if (q) url.searchParams.set('filter', q); // Support filtering by phone, ID, or queue
+    if (!initial && nextToken) url.searchParams.set('lastKey', nextToken);
+
+    if (!quiet) setStatus('Loading callbacks…');
+    try{
+      const res = await fetch(url.toString(), {
+        headers: {  'Accept':'application/json' },
+        mode: 'cors'
+      });
+      if(!res.ok){
+        const t = await res.text();
+        throw new Error(`API ${res.status}: ${t}`);
+      }
+      const data = await res.json();
+      let items = data.items || data.Items || [];
+      
+      // Debug: Log scheduled time data (only occasionally to avoid spam)
+      if (Math.random() < 0.1 && items.length > 0) {
+        console.log('[fetchCallbacks] Sample item with scheduled time check:', {
+          itemCount: items.length,
+          firstItemKeys: Object.keys(items[0] || {}),
+          firstItemScheduledTime: items[0]?.ScheduledTime,
+          firstItemCallbackContactId: items[0]?.CallbackContactId,
+          itemsWithScheduledTime: items.filter(it => it.ScheduledTime || it.scheduledTime).length
+        });
+      }
+      
+      // Apply frontend filtering as backup
+      items = filterByAllowedQueues(items);
+      appendRows(items);
+      nextToken = data.lastKey || null;
+      const lm=$('loadMoreBtn'); if(lm) lm.disabled = !nextToken;
+      if (!quiet) setStatus(nextToken ? 'More results available.' : 'All results loaded.');
+    }catch(err){
+      console.error(err);
+      setStatus(err?.message || 'Failed to fetch', true);
+    }
+  }
+
+  // ===== History functions =====
+  let allHistoryItems = []; // Store all history items for export
+  
+  const clearHistoryTable = () => {
+    const tb = $('historyTbody');
+    if (!tb) return;
+    tb.innerHTML = '';
+    const tr = document.createElement('tr'); tr.id = 'historyEmptyRow';
+    const td = document.createElement('td');
+    td.colSpan = 10; td.className='muted'; td.textContent='No history found.';
+    tr.appendChild(td); tb.appendChild(tr);
+    allHistoryItems = []; // Clear stored items
+    historyNextToken = null;
+    const lm=$('loadMoreHistoryBtn'); if(lm) lm.disabled = true;
+  };
+
+
+  // Calculate time in queue (duration from creation to completion)
+  function calculateTimeInQueue(item) {
+    // Get creation time
+    let createdSec = null;
+    if (typeof item?.epoch === 'number') {
+      createdSec = item.epoch;
+    } else if (typeof item?.epoch === 'string' && /^\d+$/.test(item.epoch)) {
+      createdSec = parseInt(item.epoch, 10);
+    } else if (item?.timeStamp) {
+      const t = Date.parse(item.timeStamp);
+      if (!Number.isNaN(t)) createdSec = Math.floor(t / 1000);
+    }
+    
+    // Get completion time
+    let completedSec = null;
+        // Prefer CompletedAt (when callback finished) over ArchivedAt (when moved to history)
+        if (item?.CompletedAt) {
+          const t = Date.parse(item.CompletedAt);
+          if (!Number.isNaN(t)) completedSec = Math.floor(t / 1000);
+        } else if (item?.ArchivedAt) {
+          const t = Date.parse(item.ArchivedAt);
+          if (!Number.isNaN(t)) completedSec = Math.floor(t / 1000);
+        }
+    
+    // If we have both times, calculate the difference
+    if (createdSec && completedSec) {
+      const diff = Math.max(0, completedSec - createdSec);
+      
+      if (diff < 60) return `${diff} sec`;
+      if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)} hr`;
+      return `${Math.floor(diff / 86400)} days`;
+    }
+    
+    // Fallback: use timeInQueue if provided by backend
+    if (item?.timeInQueue) return item.timeInQueue;
+    
+    return ''; // No data available
+  }
+
+  // Format completed date/time to show date and time on separate lines
+  function formatCompletedDateTime(completedAt, archivedAt, timezone = 'local') {
+    // Use the raw ISO string (prefer completedAt, then archivedAt - completedAt is when callback finished)
+    const dateString = completedAt || archivedAt;
+    if (!dateString) return '';
+    
+    // Parse the date string (could be ISO string or already formatted)
+    let date;
+    if (typeof dateString === 'string' && dateString.includes('T')) {
+      // ISO string - parse directly
+      date = new Date(dateString);
+    } else if (typeof dateString === 'string') {
+      // Already formatted string - try to parse
+      date = new Date(dateString);
+    } else {
+      date = new Date(dateString);
+    }
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      // Fallback: if it's a formatted string, try to split on comma
+      if (typeof dateString === 'string' && dateString.includes(',')) {
+        const parts = dateString.split(',');
+        if (parts.length >= 2) {
+          return `<div style="line-height:1.3;">${escapeHtml(parts[0].trim())}<br><span style="font-size:0.9em; opacity:0.8;">${escapeHtml(parts.slice(1).join(',').trim())}</span></div>`;
+        }
+      }
+      return escapeHtml(String(dateString));
+    }
+    
+    // Format using selected timezone
+    const formatted = formatDateTime(date, timezone);
+    return `<div style="line-height:1.3;">${escapeHtml(formatted.datePart)}<br><span style="font-size:0.9em; opacity:0.8;">${escapeHtml(formatted.timePart)}</span></div>`;
+  }
+
+  const appendHistoryRows = (items=[], append=false) => {
+    const tb = $('historyTbody'); if(!tb) return;
+    const empty = $('historyEmptyRow'); if (empty) empty.remove();
+    
+    // If not appending, clear the table first
+    if (!append) {
+      tb.innerHTML = '';
+    }
+
+    for (const it of items) {
+      // Check both ContactId and OriginalContactId for history items
+      const inboundId = it.ContactId || it.OriginalContactId || it.id || it.callbackId || it.pk || '';
+      const cbId = it.CallbackContactId || it.callbackContactId || '';
+      const phone     = it.PhoneNumber || it.phoneNumber || it.phone || '';
+      const queue     = it.QueueName || it.queueName || it.queue || '';
+      const cbqueue   = it.CBQueue || it.cbqueue || '';
+      const holdTime  = it.HoldTime || it.holdTime || '';
+      const completed = formatCompletedDateTime(it.completedAt, it.ArchivedAt, selectedHistoryTimezone);
+      const timeInQueue = calculateTimeInQueue(it);
+
+      // Get attempt information
+      // Determine status: "Deleted" if Status is "Deleted", otherwise "Complete"
+      // Note: Ignore "Failed" from old data - if it's in history table, it completed successfully
+      const rawStatus = it.Status || 'Complete';
+      let status = 'Complete'; // Default to Complete for all history items
+      let statusColor = 'var(--success)'; // Green for Complete
+      
+      if (rawStatus === 'Deleted') {
+        status = 'Deleted';
+        statusColor = 'var(--danger)'; // Red for Deleted
+      }
+      // All other statuses (including old "Failed" data) show as Complete
+      // because if they're in the history table, they were successfully processed
+      
+      const statusHtml = `<span class="tag" style="background-color: ${statusColor} !important; background: ${statusColor} !important; color: #ffffff !important; font-weight: 600; padding: 6px 16px; border-radius: 4px; display: inline-block; border: none !important;">${escapeHtml(status)}</span>`;
+
+      const contactIdLink = inboundId 
+        ? `<code style="font-size:inherit;"><a href="${createContactLink(inboundId)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none;">${escapeHtml(inboundId)}</a></code>`
+        : '<code style="font-size:inherit;"></code>';
+
+      const callbackIdLink = cbId
+        ? `<code style="font-size:inherit;"><a href="${createContactLink(cbId)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none;">${escapeHtml(cbId)}</a></code>`
+        : '<code style="font-size:inherit;"></code>';
+
+      const tr = document.createElement('tr');
+      tr.setAttribute('data-phone', phone || '');
+      tr.setAttribute('data-queue', queue || '');
+      
+      // Get sortable timestamp for completed date (prefer CompletedAt over ArchivedAt)
+      const completedTimestamp = it.completedAt || it.ArchivedAt || '';
+      const completedSortValue = completedTimestamp ? new Date(completedTimestamp).getTime() : 0;
+
+      tr.innerHTML = `
+        <td>${contactIdLink}</td>
+        <td>${phone ? `<span class="tag">${escapeHtml(phone)}</span>` : ''}</td>
+        <td data-sort="${completedSortValue}">${completed}</td>
+        <td>${queue ? `<span class="tag">${escapeHtml(queue)}</span>` : ''}</td>
+        <td style="font-size:0.85em;">${escapeHtml(cbqueue)}</td>
+        <td style="font-size:0.85em;">${escapeHtml(holdTime)}</td>
+        <td style="white-space:nowrap;">${escapeHtml(timeInQueue)}</td>
+        <td style="text-align: right;">${statusHtml}</td>
+        `;
+      tb.appendChild(tr);
+    }
+  };
+
+  // Helper function to format date for export (no HTML)
+  function formatDateForExport(dateString, timezone) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return String(dateString || '');
+    
+    const formatted = formatDateTime(date, timezone);
+    return `${formatted.datePart} ${formatted.timePart}`;
+  }
+
+  // Export history to CSV
+  function exportHistoryToCSV() {
+    if (allHistoryItems.length === 0) {
+      setStatus('No history data to export', true);
+      return;
+    }
+
+    const headers = ['Inbound ID', 'Customer Number', 'Completed', 'Inbound Queue', 'Callback Queue', 'Delay', 'Time in Queue', 'Callback ID', 'Attempts', 'Status'];
+    const rows = [headers];
+
+    allHistoryItems.forEach(item => {
+      const inboundId = item.ContactId || item.OriginalContactId || item.id || item.callbackId || item.pk || '';
+      const cbId = item.CallbackContactId || item.callbackContactId || '';
+      const phone = item.PhoneNumber || item.phoneNumber || item.phone || '';
+      const queue = item.QueueName || item.queueName || item.queue || '';
+      const cbqueue = item.CBQueue || item.cbqueue || '';
+      const holdTime = item.HoldTime || item.holdTime || '';
+      const completed = formatDateForExport(item.completedAt || item.ArchivedAt, selectedHistoryTimezone);
+      const timeInQueue = calculateTimeInQueue(item);
+      const attemptNumber = item.FinalAttemptNumber !== undefined ? item.FinalAttemptNumber : (item.AttemptNumber || 0);
+      const maxRetries = item.MaxRetries || 3;
+      const attemptsDisplay = `${attemptNumber}/${maxRetries}`;
+      const status = (item.Status === 'Deleted') ? 'Deleted' : (item.Status === 'Failed' ? 'Failed' : 'Completed');
+
+      rows.push([
+        inboundId,
+        phone,
+        completed,
+        queue,
+        cbqueue,
+        holdTime,
+        timeInQueue,
+        cbId,
+        attemptsDisplay,
+        status
+      ]);
+    });
+
+    // Convert to CSV
+    const csvContent = rows.map(row => 
+      row.map(cell => {
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        const cellStr = String(cell || '');
+        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+          return `"${cellStr.replace(/"/g, '""')}"`;
+        }
+        return cellStr;
+      }).join(',')
+    ).join('\n');
+
+    // Add BOM for Excel UTF-8 support
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `callback-history-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    setStatus(`Exported ${allHistoryItems.length} records to CSV`);
+  }
+
+  // Export history to XLSX
+  function exportHistoryToXLSX() {
+    if (allHistoryItems.length === 0) {
+      setStatus('No history data to export', true);
+      return;
+    }
+
+    if (typeof XLSX === 'undefined') {
+      setStatus('Excel export library not loaded', true);
+      return;
+    }
+
+    const headers = ['Inbound ID', 'Customer Number', 'Completed', 'Inbound Queue', 'Callback Queue', 'Delay', 'Time in Queue', 'Callback ID', 'Status'];
+    const data = [headers];
+
+    allHistoryItems.forEach(item => {
+      const inboundId = item.ContactId || item.OriginalContactId || item.id || item.callbackId || item.pk || '';
+      const cbId = item.CallbackContactId || item.callbackContactId || '';
+      const phone = item.PhoneNumber || item.phoneNumber || item.phone || '';
+      const queue = item.QueueName || item.queueName || item.queue || '';
+      const cbqueue = item.CBQueue || item.cbqueue || '';
+      const holdTime = item.HoldTime || item.holdTime || '';
+      const completed = formatDateForExport(item.completedAt || item.ArchivedAt, selectedHistoryTimezone);
+      const timeInQueue = calculateTimeInQueue(item);
+      const status = (item.Status === 'Deleted') ? 'Deleted' : (item.Status === 'Failed' ? 'Failed' : 'Completed');
+
+      data.push([
+        inboundId,
+        phone,
+        completed,
+        queue,
+        cbqueue,
+        holdTime,
+        timeInQueue,
+        cbId,
+        status
+      ]);
+    });
+
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 20 }, // Inbound ID
+      { wch: 18 }, // Customer Number
+      { wch: 25 }, // Completed
+      { wch: 20 }, // Inbound Queue
+      { wch: 20 }, // Callback Queue
+      { wch: 12 }, // Delay
+      { wch: 15 }, // Time in Queue
+      { wch: 20 }, // Callback ID
+      { wch: 12 }  // Status
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Callback History');
+
+    // Generate file and download
+    const fileName = `callback-history-${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    
+    setStatus(`Exported ${allHistoryItems.length} records to Excel`);
+  }
+
+  async function fetchHistory(initial=true){
+    if(!idToken){ setStatus('Please sign in.', true); return; }
+    const limit = 25; // Fixed page size
+    const q = ($('historyFilter')?.value || '').trim();
+
+    // Use current region's endpoint
+    const historyEndpoint = window.HISTORY_ENDPOINT || HISTORY_ENDPOINT;
+    const url = new URL(historyEndpoint);
+    url.searchParams.set('limit', String(limit));
+    // Add region parameter so Lambda knows which tables to use
+    url.searchParams.set('region', selectedRegion);
+    if (q) url.searchParams.set('filter', q); // Support filtering
+    if (!initial && historyNextToken) url.searchParams.set('lastKey', historyNextToken);
+
+    setStatus('Loading history…');
+    try{
+      const res = await fetch(url.toString(), {
+        headers: {  'Accept':'application/json' },
+        mode: 'cors'
+      });
+      if(!res.ok){
+        const t = await res.text();
+        throw new Error(`API ${res.status}: ${t}`);
+      }
+      const data = await res.json();
+      let items = data.items || data.Items || [];
+      
+      console.log('[fetchHistory] API response:', {
+        initial,
+        itemCount: items.length,
+        hasLastKey: !!data.lastKey,
+        lastKey: data.lastKey,
+        historyNextToken: historyNextToken
+      });
+      
+      // Apply frontend filtering as backup
+      items = filterByAllowedQueues(items);
+      
+      // Append items to allHistoryItems for export
+      if (initial) {
+        allHistoryItems = items;
+      } else {
+        allHistoryItems = allHistoryItems.concat(items);
+      }
+      
+      appendHistoryRows(items, !initial);
+      historyNextToken = data.lastKey || null;
+      const lm=$('loadMoreHistoryBtn'); if(lm) lm.disabled = !historyNextToken;
+      setStatus(historyNextToken ? 'More results available.' : 'All results loaded.');
+    }catch(err){
+      console.error(err);
+      setStatus(err?.message || 'Failed to fetch history', true);
+    }
+  }
+
+  // ===== Tab switching =====
+  function switchView(viewName) {
+    currentView = viewName;
+    
+    // Stop auto-refresh when switching away from active view
+    if (viewName !== 'active') {
+      stopAutoRefresh();
+    }
+    
+    // Update tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      if (tab.getAttribute('data-view') === viewName) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+    // Update views
+    document.querySelectorAll('.view').forEach(view => {
+      if (view.id === `${viewName}View`) {
+        view.classList.add('active');
+      } else {
+        view.classList.remove('active');
+      }
+    });
+    // Load data for the view
+    if (viewName === 'active') {
+      clearTable();
+      fetchCallbacks(true).catch(()=>{});
+      // Start auto-refresh after loading
+      startAutoRefresh();
+    } else if (viewName === 'history') {
+      clearHistoryTable();
+      fetchHistory(true).catch(()=>{});
+    } else if (viewName === 'analytics') {
+      loadAnalyticsQueues();
+    }
+  }
+
+  
+ async function linkCallback(ev){
+    const btn = ev.currentTarget;
+    const inboundId = btn.getAttribute('data-id');
+    if(!inboundId){ setStatus('Missing inbound ContactId', true); return; }
+    if(!idToken){ setStatus('Please sign in.', true); return; }
+
+    // UI feedback
+    btn.disabled = true;
+    const prev = btn.textContent;
+    btn.textContent = 'Updating…';
+
+    try {
+      const apiBaseUrl = window.API_BASE_URL || API_BASE_URL;
+      const url = `${apiBaseUrl}/callbacks/${encodeURIComponent(inboundId)}/link?region=${selectedRegion}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {  'Accept':'application/json' },
+        mode: 'cors'
+      });
+
+      const raw = await res.text();
+      let data; try { data = JSON.parse(raw); } catch { data = { message: raw }; }
+
+      if (res.status === 200 && data?.callbackContactId) {
+        // Replace the 7th cell (index 6) with the linked CallbackContactId
+        const row = btn.closest('tr');
+        const cell = row?.cells?.[6]; // 0-based; 7th column is "Callback"
+        if (cell) cell.innerHTML = `<code><a href="${createContactLink(data.callbackContactId)}" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none;">${escapeHtml(data.callbackContactId)}</a></code>`;
+        setStatus('Callback ID linked.');
+			// Auto-refresh the table
+			refresh();
+
+        return;
+      }
+
+      if (res.status === 202) {
+        // Not available yet (still pending in Connect)
+        setStatus('Callback not found yet (still pending). Try again shortly.');
+        btn.textContent = 'Try again';
+        btn.disabled = false;
+        return;
+      }
+
+      if (res.status === 403) {
+        setStatus('Forbidden: not an admin user.', true);
+      } else {
+        setStatus(`Link failed (${res.status}): ${data?.message || 'Unknown error'}`, true);
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus('Network error while linking.', true);
+    } finally {
+      // If we didn’t replace the button (success path), restore it
+      if (document.body.contains(btn)) {
+        btn.textContent = prev;
+        btn.disabled = false;
+      }
+    }
+  }
+  window.linkCallback = linkCallback;
+  
+  // ===== Analytics functions =====
+  let analyticsChart = null;
+  let selectedChartType = localStorage.getItem('analyticsChartType') || 'bar';
+  let allHistoryData = [];
+  
+  // Load unique queues from history data
+  async function loadAnalyticsQueues() {
+    if (!idToken) {
+      setStatus('Please sign in.', true);
+      return;
+    }
+    
+    setStatus('Loading queues from history...');
+    try {
+      // Fetch ALL history data to get unique queues (paginate through all pages)
+      let allHistoryItems = [];
+      let nextToken = null;
+      
+      do {
+        const historyEndpoint = window.HISTORY_ENDPOINT || HISTORY_ENDPOINT;
+        const url = new URL(historyEndpoint);
+        url.searchParams.set('limit', '1000');
+        url.searchParams.set('region', selectedRegion); // Add region parameter
+        if (nextToken) url.searchParams.set('lastKey', nextToken);
+        
+        const res = await fetch(url.toString(), {
+          headers: {  'Accept':'application/json' },
+          mode: 'cors'
+        });
+        
+        if (!res.ok) {
+          throw new Error(`API ${res.status}`);
+        }
+        
+        const data = await res.json();
+        const items = data.items || data.Items || [];
+        allHistoryItems = allHistoryItems.concat(items);
+        nextToken = data.lastKey || null;
+      } while (nextToken);
+      
+      allHistoryData = allHistoryItems;
+      
+      // Extract unique queues, filtered by user permissions
+      const queues = new Set();
+      allHistoryItems.forEach(item => {
+        const queue = item.QueueName || item.queueName || item.queue;
+        if (queue) {
+          // Filter by allowed queues if not admin
+          if (allowedQueues === null || allowedQueues.includes(queue)) {
+            queues.add(queue);
+          }
+        }
+      });
+      
+      // Populate queue checkboxes
+      const container = $('analyticsQueueCheckboxes');
+      if (!container) return;
+      
+      // Preserve currently selected queues before clearing
+      const currentCheckboxes = container.querySelectorAll('input[type="checkbox"]:checked') || [];
+      const currentlySelected = Array.from(currentCheckboxes).map(cb => cb.value);
+      
+      container.innerHTML = '';
+      const sortedQueues = Array.from(queues).sort();
+      
+      if (sortedQueues.length === 0) {
+        container.innerHTML = '<div class="muted">No queues found in history data.</div>';
+        return;
+      }
+      
+      sortedQueues.forEach(queue => {
+        const label = document.createElement('label');
+        label.style.cssText = 'display: flex; align-items: center; cursor: pointer; padding: 6px 12px; border-radius: 4px; transition: background 0.2s; white-space: nowrap; text-align: left; min-width: fit-content;';
+        label.addEventListener('mouseenter', () => label.style.background = 'var(--panel-hover)');
+        label.addEventListener('mouseleave', () => label.style.background = 'transparent');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = queue;
+        checkbox.style.marginRight = '10px';
+        checkbox.style.flexShrink = '0';
+        checkbox.style.width = '18px';
+        checkbox.style.height = '18px';
+        checkbox.style.minWidth = '18px';
+        // Restore previously selected queues
+        if (currentlySelected.includes(queue)) {
+          checkbox.checked = true;
+        }
+        checkbox.addEventListener('change', () => {
+          updateQueueDropdownText();
+          calculateAnalytics();
+        });
+        label.appendChild(checkbox);
+        const text = document.createTextNode(queue);
+        label.appendChild(text);
+        container.appendChild(label);
+      });
+      
+      updateQueueDropdownText();
+      setStatus(`Loaded ${sortedQueues.length} unique queue(s) from history. Select queues and click "Refresh Data" to see analytics.`);
+    } catch (err) {
+      console.error('Error loading queues:', err);
+      setStatus(err?.message || 'Failed to load queues', true);
+    }
+  }
+  
+  // Update dropdown text to show selected count
+  function updateQueueDropdownText() {
+    const checkboxes = $('analyticsQueueCheckboxes')?.querySelectorAll('input[type="checkbox"]') || [];
+    const checked = $('analyticsQueueCheckboxes')?.querySelectorAll('input[type="checkbox"]:checked') || [];
+    const total = checkboxes.length;
+    const selected = checked.length;
+    
+    const textEl = $('analyticsQueueDropdownText');
+    if (textEl) {
+      if (selected === 0) {
+        textEl.textContent = 'Select queues...';
+      } else if (selected === total) {
+        textEl.textContent = `All queues selected (${total})`;
+      } else {
+        textEl.textContent = `${selected} of ${total} queues selected`;
+      }
+    }
+  }
+
+  // Select/deselect all queues
+  function selectAllQueues(select) {
+    const checkboxes = $('analyticsQueueCheckboxes').querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = select);
+    updateQueueDropdownText();
+    calculateAnalytics();
+  }
+  
+  // Get date range based on selected option
+  function getDateRange() {
+    const dateRange = $('analyticsDateRange')?.value || 'today';
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    let startDate, endDate;
+    
+    switch (dateRange) {
+      case 'today':
+        startDate = new Date(today);
+        endDate = new Date(today);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+        
+      case 'yesterday':
+        startDate = new Date(today);
+        startDate.setDate(startDate.getDate() - 1);
+        endDate = new Date(today);
+        endDate.setDate(endDate.getDate() - 1);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+        
+      case 'currentWeek':
+        // Start of week (Monday)
+        startDate = new Date(today);
+        const dayOfWeek = startDate.getDay();
+        const diff = startDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1); // Adjust to Monday
+        startDate.setDate(diff);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+        
+      case 'lastWeek':
+        // Last week Monday to Sunday
+        startDate = new Date(today);
+        const lastWeekDay = startDate.getDay();
+        const lastWeekDiff = startDate.getDate() - lastWeekDay + (lastWeekDay === 0 ? -6 : 1) - 7; // Previous Monday
+        startDate.setDate(lastWeekDiff);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6); // Sunday
+        endDate.setHours(23, 59, 59, 999);
+        break;
+        
+      case 'currentMonth':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+        
+      case 'lastMonth':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+        
+      case 'custom':
+        const startDateInput = $('analyticsStartDate')?.value;
+        const endDateInput = $('analyticsEndDate')?.value;
+        if (!startDateInput || !endDateInput) {
+          return null; // Invalid custom range
+        }
+        startDate = new Date(startDateInput);
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(endDateInput);
+        endDate.setHours(23, 59, 59, 999);
+        break;
+        
+      default:
+        return null; // No filter
+    }
+    
+    return { startDate, endDate };
+  }
+  
+  // Check if an item's completion date is within the date range
+  function isItemInDateRange(item, startDate, endDate) {
+    if (!startDate || !endDate) return true; // No date filter
+    
+    // Use CompletedAt if available, otherwise ArchivedAt, otherwise timeStamp
+    let itemDate = null;
+    if (item?.CompletedAt) {
+      itemDate = new Date(item.CompletedAt);
+    } else if (item?.ArchivedAt) {
+      itemDate = new Date(item.ArchivedAt);
+    } else if (item?.timeStamp) {
+      itemDate = new Date(item.timeStamp);
+    }
+    
+    if (!itemDate || isNaN(itemDate.getTime())) return false;
+    
+    return itemDate >= startDate && itemDate <= endDate;
+  }
+  
+  // Calculate and display analytics
+  async function calculateAnalytics() {
+    if (!idToken) {
+      setStatus('Please sign in.', true);
+      return;
+    }
+    
+    const checkboxes = $('analyticsQueueCheckboxes').querySelectorAll('input[type="checkbox"]:checked');
+    const selectedQueues = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (selectedQueues.length === 0) {
+      $('analyticsResults').style.display = 'none';
+      setStatus('Please select at least one queue.', true);
+      return;
+    }
+    
+    // Validate date range
+    const dateRange = getDateRange();
+    if (dateRange === null) {
+      $('analyticsResults').style.display = 'none';
+      setStatus('Please select a valid date range. For custom range, both start and end dates are required.', true);
+      return;
+    }
+    
+    // Validate custom date range
+    if ($('analyticsDateRange')?.value === 'custom') {
+      const startDate = $('analyticsStartDate')?.value;
+      const endDate = $('analyticsEndDate')?.value;
+      if (!startDate || !endDate) {
+        $('analyticsResults').style.display = 'none';
+        setStatus('Please select both start and end dates for custom range.', true);
+        return;
+      }
+      if (new Date(startDate) > new Date(endDate)) {
+        $('analyticsResults').style.display = 'none';
+        setStatus('Start date must be before or equal to end date.', true);
+        return;
+      }
+    }
+    
+    setStatus('Calculating analytics...');
+    
+    try {
+      // Reuse cached history data if available (from loadAnalyticsQueues), otherwise fetch
+      let rawHistoryData = [];
+      
+      if (allHistoryData && allHistoryData.length > 0) {
+        // Use cached raw data
+        rawHistoryData = allHistoryData;
+      } else {
+        // Cache not available, fetch all history data
+        let nextToken = null;
+        
+        do {
+          const historyEndpoint = window.HISTORY_ENDPOINT || HISTORY_ENDPOINT;
+          const url = new URL(historyEndpoint);
+          url.searchParams.set('limit', '1000');
+          url.searchParams.set('region', selectedRegion); // Add region parameter
+          if (nextToken) url.searchParams.set('lastKey', nextToken);
+          
+          const res = await fetch(url.toString(), {
+            headers: {  'Accept':'application/json' },
+            mode: 'cors'
+          });
+          
+          if (!res.ok) throw new Error(`API ${res.status}`);
+          
+          const data = await res.json();
+          const items = data.items || data.Items || [];
+          rawHistoryData = rawHistoryData.concat(items);
+          nextToken = data.lastKey || null;
+        } while (nextToken);
+        
+        // Cache the raw fetched data for future use
+        allHistoryData = rawHistoryData;
+      }
+      
+      // Filter the data (whether from cache or fresh fetch) by selected queues, permissions, and date range
+      const dateRangeFilter = getDateRange();
+      const allItems = rawHistoryData.filter(item => {
+        const queue = item.QueueName || item.queueName || item.queue;
+        if (!queue) return false;
+        // Check if queue is in selected queues
+        if (!selectedQueues.includes(queue)) return false;
+        // Check if user has permission (if not admin)
+        if (allowedQueues !== null && !allowedQueues.includes(queue)) return false;
+        // Check if item is within date range
+        if (dateRangeFilter && !isItemInDateRange(item, dateRangeFilter.startDate, dateRangeFilter.endDate)) return false;
+        return true;
+      });
+      
+      // Calculate statistics
+      const totalCallbacks = allItems.length;
+      
+      // Calculate average time in queue
+      let totalSeconds = 0;
+      let validCount = 0;
+      
+      allItems.forEach(item => {
+        let createdSec = null;
+        if (typeof item?.epoch === 'number') {
+          createdSec = item.epoch;
+        } else if (typeof item?.epoch === 'string' && /^\d+$/.test(item.epoch)) {
+          createdSec = parseInt(item.epoch, 10);
+        } else if (item?.timeStamp) {
+          const t = Date.parse(item.timeStamp);
+          if (!Number.isNaN(t)) createdSec = Math.floor(t / 1000);
+        }
+        
+        let completedSec = null;
+        // Prefer CompletedAt (when callback finished) over ArchivedAt (when moved to history)
+        if (item?.CompletedAt) {
+          const t = Date.parse(item.CompletedAt);
+          if (!Number.isNaN(t)) completedSec = Math.floor(t / 1000);
+        } else if (item?.ArchivedAt) {
+          const t = Date.parse(item.ArchivedAt);
+          if (!Number.isNaN(t)) completedSec = Math.floor(t / 1000);
+        }
+        
+        if (createdSec && completedSec) {
+          totalSeconds += (completedSec - createdSec);
+          validCount++;
+        }
+      });
+      
+      const avgSeconds = validCount > 0 ? Math.floor(totalSeconds / validCount) : 0;
+      let avgTimeStr = 'N/A';
+      if (avgSeconds > 0) {
+        if (avgSeconds < 60) avgTimeStr = `${avgSeconds} sec`;
+        else if (avgSeconds < 3600) avgTimeStr = `${Math.floor(avgSeconds / 60)} min`;
+        else if (avgSeconds < 86400) avgTimeStr = `${Math.floor(avgSeconds / 3600)} hr`;
+        else avgTimeStr = `${Math.floor(avgSeconds / 86400)} days`;
+      }
+      
+      // Determine if we should group by date (for week/month views) or by queue
+      const dateRangeForGrouping = getDateRange();
+      const dateRangeValue = $('analyticsDateRange')?.value || 'today';
+      const shouldGroupByDate = dateRangeForGrouping && (dateRangeValue === 'currentWeek' || dateRangeValue === 'lastWeek' || dateRangeValue === 'currentMonth' || dateRangeValue === 'lastMonth' || dateRangeValue === 'custom');
+      
+      let labels = [];
+      let data = [];
+      let chartTitle = 'Distribution by Queue';
+      
+      // Store queue breakdown per date for tooltip display
+      let dateQueueBreakdown = {};
+      
+      if (shouldGroupByDate) {
+        // Group by date and track queue breakdown
+        const dateCounts = {};
+        dateQueueBreakdown = {};
+        
+        allItems.forEach(item => {
+          // Get the date from the item
+          let itemDate = null;
+          if (item?.CompletedAt) {
+            itemDate = new Date(item.CompletedAt);
+          } else if (item?.ArchivedAt) {
+            itemDate = new Date(item.ArchivedAt);
+          } else if (item?.timeStamp) {
+            itemDate = new Date(item.timeStamp);
+          }
+          
+          if (itemDate && !isNaN(itemDate.getTime())) {
+            // Format date as YYYY-MM-DD for grouping
+            const dateKey = itemDate.toISOString().split('T')[0];
+            dateCounts[dateKey] = (dateCounts[dateKey] || 0) + 1;
+            
+            // Track queue breakdown for this date
+            if (!dateQueueBreakdown[dateKey]) {
+              dateQueueBreakdown[dateKey] = {};
+            }
+            const queue = item.QueueName || item.queueName || item.queue || 'Unknown';
+            dateQueueBreakdown[dateKey][queue] = (dateQueueBreakdown[dateKey][queue] || 0) + 1;
+          }
+        });
+        
+        // Sort dates and format labels
+        const sortedDates = Object.keys(dateCounts).sort();
+        labels = sortedDates.map(dateStr => {
+          const date = new Date(dateStr);
+          // Format as "MM/DD" or "MMM DD" for better readability
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        });
+        data = sortedDates.map(dateStr => dateCounts[dateStr]);
+        chartTitle = 'Distribution by Date';
+        
+        // Store date key mapping and queue breakdown for tooltip
+        window.analyticsDateKeys = sortedDates;
+        window.analyticsDateQueueBreakdown = dateQueueBreakdown;
+      } else {
+        // Group by queue (default)
+        const queueCounts = {};
+        allItems.forEach(item => {
+          const queue = item.QueueName || item.queueName || item.queue;
+          if (queue) {
+            queueCounts[queue] = (queueCounts[queue] || 0) + 1;
+          }
+        });
+        
+        labels = Object.keys(queueCounts);
+        data = Object.values(queueCounts);
+        chartTitle = 'Distribution by Queue';
+        
+        // Clear date-related variables when not grouping by date
+        window.analyticsDateKeys = null;
+        window.analyticsDateQueueBreakdown = null;
+      }
+      
+      // Update statistics display
+      $('analyticsTotalCallbacks').textContent = totalCallbacks.toLocaleString();
+      $('analyticsAvgTime').textContent = avgTimeStr;
+      $('analyticsSelectedQueues').textContent = selectedQueues.length;
+      
+      // Update chart title
+      const chartTitleElement = $('analyticsChartTitle');
+      if (chartTitleElement) {
+        chartTitleElement.textContent = chartTitle;
+      }
+      
+      // Get chart type from selector
+      const chartType = $('analyticsChartType')?.value || selectedChartType || 'bar';
+      
+      // Show/hide chart and table containers
+      const chartContainer = $('analyticsChartContainer');
+      const tableContainer = $('analyticsTableContainer');
+      if (chartType === 'table') {
+        if (chartContainer) chartContainer.style.display = 'none';
+        if (tableContainer) tableContainer.style.display = 'block';
+      } else {
+        if (chartContainer) chartContainer.style.display = 'block';
+        if (tableContainer) tableContainer.style.display = 'none';
+      }
+      
+      // If table view, render table and return early
+      if (chartType === 'table') {
+        renderAnalyticsTable(labels, data, shouldGroupByDate, dateQueueBreakdown, totalCallbacks, window.analyticsDateKeys);
+        $('analyticsResults').style.display = 'block';
+        setStatus(`Analytics calculated for ${totalCallbacks} callbacks.`);
+        return;
+      }
+      
+      // Create chart
+      const ctx = document.getElementById('analyticsChart').getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (analyticsChart) {
+        analyticsChart.destroy();
+      }
+      
+      // Store shouldGroupByDate for use in chart config
+      const isDateGrouped = shouldGroupByDate;
+      
+      // Generate colors
+      const colors = [
+        '#EF7200', '#FF9500', '#FFB84D', '#FFD699',
+        '#4A90E2', '#6BA3E8', '#8BB6ED', '#A9C9F2',
+        '#50C878', '#6DD492', '#8AE0AC', '#A8ECC6',
+        '#E74C3C', '#EC7063', '#F1948A', '#F5B7B1'
+      ];
+      
+      // Get text color based on theme - black for light mode, light for dark mode
+      const isDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
+      const textColor = isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#e8f0ff' : '#1f2937';
+      const gridColor = isDarkMode ? 'rgba(139, 157, 195, 0.2)' : 'rgba(0, 0, 0, 0.1)';
+      
+      // Common chart configuration
+      const commonConfig = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              title: function(context) {
+                return context[0].label || '';
+              },
+              label: function(context) {
+                const label = context.label || '';
+                const value = chartType === 'bar' ? (context.parsed.x || 0) : (context.parsed || 0);
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                
+                // If grouping by date, show queue breakdown
+                if (isDateGrouped && window.analyticsDateKeys && window.analyticsDateQueueBreakdown) {
+                  const dateKey = window.analyticsDateKeys[context.dataIndex];
+                  const queueBreakdown = window.analyticsDateQueueBreakdown[dateKey];
+                  
+                  if (queueBreakdown && Object.keys(queueBreakdown).length > 0) {
+                    // Sort queues by count (descending)
+                    const sortedQueues = Object.entries(queueBreakdown)
+                      .sort((a, b) => b[1] - a[1])
+                      .map(([queue, count]) => {
+                        const queuePercentage = ((count / value) * 100).toFixed(1);
+                        return `  ${queue}: ${count} (${queuePercentage}%)`;
+                      });
+                    
+                    return [
+                      `Total: ${value} (${percentage}%)`,
+                      'By Queue:',
+                      ...sortedQueues
+                    ];
+                  }
+                }
+                
+                return `${label}: ${value} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      };
+      
+      // Chart-specific configuration
+      if (chartType === 'pie') {
+        analyticsChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: data,
+              backgroundColor: labels.map((_, i) => colors[i % colors.length]),
+              borderColor: 'var(--panel)',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            ...commonConfig,
+            plugins: {
+              ...commonConfig.plugins,
+              legend: {
+                position: 'right',
+                labels: {
+                  padding: 15,
+                  usePointStyle: true,
+                  color: textColor,
+                  font: {
+                    size: 12
+                  }
+                }
+              }
+            }
+          }
+        });
+      } else {
+        // Bar chart
+        analyticsChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Number of Callbacks',
+              data: data,
+              backgroundColor: labels.map((_, i) => colors[i % colors.length]),
+              borderColor: labels.map((_, i) => colors[i % colors.length]),
+              borderWidth: 1
+            }]
+          },
+          options: {
+            ...commonConfig,
+            indexAxis: 'y', // Horizontal bar chart
+            plugins: {
+              ...commonConfig.plugins,
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: {
+                  color: textColor,
+                  font: {
+                    size: 12
+                  },
+                  stepSize: 1
+                },
+                grid: {
+                  color: gridColor
+                },
+                title: {
+                  display: true,
+                  text: 'Number of Callbacks',
+                  color: textColor,
+                  font: {
+                    size: 14,
+                    weight: 'bold'
+                  }
+                }
+              },
+              y: {
+                ticks: {
+                  color: textColor,
+                  font: {
+                    size: 12
+                  },
+                  // For date labels, ensure they're readable
+                  maxRotation: isDateGrouped ? 45 : 0,
+                  minRotation: isDateGrouped ? 45 : 0
+                },
+                grid: {
+                  color: gridColor
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      $('analyticsResults').style.display = 'block';
+      setStatus(`Analytics calculated for ${totalCallbacks} callbacks.`);
+    } catch (err) {
+      console.error('Error calculating analytics:', err);
+      setStatus(err?.message || 'Failed to calculate analytics', true);
+    }
+  }
+
+  // ===== Analytics Table Renderer =====
+  function renderAnalyticsTable(labels, data, isDateGrouped, dateQueueBreakdown, totalCallbacks, dateKeys) {
+    const tbody = $('analyticsTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+    
+    if (labels.length === 0 || data.length === 0) {
+      const row = tbody.insertRow();
+      const cell = row.insertCell();
+      cell.colSpan = 3;
+      cell.textContent = 'No data available';
+      cell.style.textAlign = 'center';
+      cell.style.padding = '20px';
+      cell.style.color = 'var(--muted)';
+      return;
+    }
+    
+    // Create array of table rows with label, amount, and percentage
+    const tableData = labels.map((label, index) => {
+      const amount = data[index];
+      const percentage = totalCallbacks > 0 ? ((amount / totalCallbacks) * 100).toFixed(1) : '0.0';
+      // Store original index to map back to dateKeys
+      const dateKey = isDateGrouped && dateKeys ? dateKeys[index] : null;
+      return {
+        label,
+        amount,
+        percentage: parseFloat(percentage),
+        dateKey
+      };
+    });
+    
+    // Sort by amount (descending)
+    tableData.sort((a, b) => b.amount - a.amount);
+    
+    // Render rows
+    tableData.forEach((item) => {
+      const row = tbody.insertRow();
+      
+      // Queue/Date column
+      const labelCell = row.insertCell();
+      labelCell.textContent = item.label;
+      
+      // Amount column
+      const amountCell = row.insertCell();
+      amountCell.textContent = item.amount.toLocaleString();
+      amountCell.style.textAlign = 'right';
+      
+      // Percentage column
+      const percentageCell = row.insertCell();
+      percentageCell.textContent = `${item.percentage}%`;
+      percentageCell.style.textAlign = 'right';
+      
+      // If date-grouped and we have queue breakdown, add expandable rows
+      if (isDateGrouped && dateQueueBreakdown && item.dateKey) {
+        const queueBreakdown = dateQueueBreakdown[item.dateKey];
+        
+        if (queueBreakdown && Object.keys(queueBreakdown).length > 0) {
+          // Add a click handler to expand/collapse queue details
+          row.style.cursor = 'pointer';
+          row.title = 'Click to show/hide queue breakdown';
+          
+          // Store expanded state and reference to the row
+          row.dataset.expanded = 'false';
+          
+          row.addEventListener('click', () => {
+            const isExpanded = row.dataset.expanded === 'true';
+            
+            if (isExpanded) {
+              // Remove expanded rows (only those directly following this row)
+              let nextRow = row.nextSibling;
+              while (nextRow && nextRow.classList.contains('queue-detail-row')) {
+                const toRemove = nextRow;
+                nextRow = nextRow.nextSibling;
+                tbody.removeChild(toRemove);
+              }
+              row.dataset.expanded = 'false';
+            } else {
+              // Check if rows are already there (prevent duplicates)
+              let nextRow = row.nextSibling;
+              if (nextRow && nextRow.classList.contains('queue-detail-row')) {
+                // Already expanded, do nothing
+                return;
+              }
+              
+              // Get the index of the current row to insert after it
+              const rowIndex = Array.from(tbody.rows).indexOf(row);
+              
+              // Add queue breakdown rows right after this row
+              const sortedQueues = Object.entries(queueBreakdown)
+                .sort((a, b) => b[1] - a[1]);
+              
+              // Insert rows in reverse order so they appear in correct order
+              sortedQueues.reverse().forEach(([queue, count]) => {
+                const detailRow = tbody.insertRow(rowIndex + 1);
+                detailRow.classList.add('queue-detail-row');
+                detailRow.style.backgroundColor = 'var(--bg-secondary)';
+                
+                const queueCell = detailRow.insertCell();
+                queueCell.textContent = `  └─ ${queue}`;
+                queueCell.style.paddingLeft = '40px';
+                queueCell.style.color = 'var(--muted)';
+                
+                const countCell = detailRow.insertCell();
+                countCell.textContent = count.toLocaleString();
+                countCell.style.textAlign = 'right';
+                countCell.style.color = 'var(--muted)';
+                
+                const percentCell = detailRow.insertCell();
+                const queuePercent = item.amount > 0 ? ((count / item.amount) * 100).toFixed(1) : '0.0';
+                percentCell.textContent = `${queuePercent}%`;
+                percentCell.style.textAlign = 'right';
+                percentCell.style.color = 'var(--muted)';
+              });
+              
+              row.dataset.expanded = 'true';
+            }
+          });
+        }
+      }
+    });
+  }
+
+  // ===== Theme Toggle =====
+  function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeToggle(savedTheme);
+  }
+  
+  function toggleTheme() {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+    updateThemeToggle(newTheme);
+    // Update chart colors if chart exists
+    if (analyticsChart) {
+      const isDarkMode = newTheme === 'dark';
+      const textColor = isDarkMode ? getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#e8f0ff' : '#1f2937';
+      const gridColor = isDarkMode ? 'rgba(139, 157, 195, 0.2)' : 'rgba(0, 0, 0, 0.1)';
+      
+      if (analyticsChart.config.type === 'pie') {
+        // Update pie chart legend
+        if (analyticsChart.options.plugins.legend) {
+          analyticsChart.options.plugins.legend.labels.color = textColor;
+        }
+      } else {
+        // Update bar chart scales
+        if (analyticsChart.options.scales) {
+          if (analyticsChart.options.scales.x) {
+            analyticsChart.options.scales.x.ticks.color = textColor;
+            if (analyticsChart.options.scales.x.title) {
+              analyticsChart.options.scales.x.title.color = textColor;
+            }
+            analyticsChart.options.scales.x.grid.color = gridColor;
+          }
+          if (analyticsChart.options.scales.y) {
+            analyticsChart.options.scales.y.ticks.color = textColor;
+            analyticsChart.options.scales.y.grid.color = gridColor;
+          }
+        }
+      }
+      analyticsChart.update();
+    }
+  }
+  
+  function updateThemeToggle(theme) {
+    const icon = $('themeIcon');
+    const text = $('themeText');
+    if (icon && text) {
+      icon.textContent = theme === 'dark' ? '☀️' : '🌙';
+      text.textContent = theme === 'dark' ? 'Light' : 'Dark';
+    }
+  }
+
+  // Silent sync function for auto-sync on page load
+  async function syncDatabaseSilently() {
+    if (!idToken) return;
+    
+    try {
+      console.log('[Auto-Sync] Running silent database sync');
+      const apiBaseUrl = window.API_BASE_URL || API_BASE_URL;
+      const url = `${apiBaseUrl}/callbacks/cleanup?region=${selectedRegion}`;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+      
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {  'Accept': 'application/json' },
+        mode: 'cors',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (res.ok) {
+        const data = await res.json();
+        const count = data.cleanedCount || 0;
+        console.log(`[Auto-Sync] Success: ${count} callback(s) moved to history`);
+      } else {
+        console.warn('[Auto-Sync] Failed:', res.status);
+      }
+    } catch (err) {
+      console.warn('[Auto-Sync] Error (non-critical):', err.message);
+    }
+  }
+
+  // Wire up
+  window.addEventListener('DOMContentLoaded', async ()=>{
+    // Check tool access with Cognito group validation
+    const permissions = ({ isAdmin: true, hasAccess: true, allowedQueues: null, allowedTableIds: null, groups: [] });
+    if (!permissions) {
+      // Access denied - checkToolAccess already handled redirect
+      return;
+    }
+    
+    // Initialize theme
+    initTheme();
+    
+    // Initialize region selector
+    const instanceSelect = $('instance');
+    if (instanceSelect) {
+      instanceSelect.value = selectedRegion;
+      instanceSelect.addEventListener('change', async (e) => {
+        const newRegion = e.target.value;
+        const oldConfig = getCurrentRegionConfig();
+        const config = updateRegionConfig(newRegion);
+        
+        // Check if required config is available
+        if (!config.apiBaseUrl) {
+          setStatus(`Configuration incomplete for ${config.name}. Please update REGION_CONFIG.`, true);
+          // Revert to previous region
+          instanceSelect.value = selectedRegion;
+          updateRegionConfig(selectedRegion);
+          return;
+        }
+        
+        setStatus(`Switched to ${config.name}.`);
+        // Refresh data for the newly selected region
+        if (currentView === 'active') {
+          clearTable();
+          fetchCallbacks(true).catch(()=>{});
+        } else if (currentView === 'history') {
+          clearHistoryTable();
+          fetchHistory(true).catch(()=>{});
+        }
+      });
+    }
+    
+    // Initialize timezone dropdowns
+    if ($('timezone')) {
+      $('timezone').value = selectedTimezone;
+      $('timezone').addEventListener('change', (e) => {
+        selectedTimezone = e.target.value;
+        localStorage.setItem('timezone', selectedTimezone);
+        // Refresh table to update times
+        nextToken = null;
+        clearTable();
+        fetchCallbacks(true);
+      });
+    }
+    if ($('historyTimezone')) {
+      $('historyTimezone').value = selectedHistoryTimezone;
+      $('historyTimezone').addEventListener('change', (e) => {
+        selectedHistoryTimezone = e.target.value;
+        localStorage.setItem('historyTimezone', selectedHistoryTimezone);
+        // Refresh table to update times
+        historyNextToken = null;
+        clearHistoryTable();
+        fetchHistory(true);
+      });
+    }
+    
+    // Try to restore session
+    await restoreSession();
+    
+    // Initialize dialog handlers
+    initDialogHandlers();
+    
+    // Theme toggle
+    $('themeToggle').addEventListener('click', toggleTheme);
+    
+    // Note: Sign in/out handled via portal only
+    $('cleanupBtn').addEventListener('click', async ()=>{
+      if(!idToken){ setStatus('Please sign in.', true); return; }
+      const btn = $('cleanupBtn');
+      const prev = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Syncing...';
+      setStatus('Checking Amazon Connect for completed callbacks...');
+      
+      try {
+        const apiBaseUrl = window.API_BASE_URL || API_BASE_URL;
+        const url = `${apiBaseUrl}/callbacks/cleanup?region=${selectedRegion}`;
+        
+        console.log('[Sync Database] Making request', {
+          url,
+          apiBaseUrl,
+          selectedRegion,
+          method: 'POST'
+        });
+        
+        // Create an AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout
+        
+        let res;
+        try {
+          res = await fetch(url, {
+            method: 'POST',
+            headers: {  'Accept': 'application/json' },
+            mode: 'cors',
+            signal: controller.signal
+          });
+          console.log('[Sync Database] Response received', {
+            status: res.status,
+            statusText: res.statusText,
+            ok: res.ok,
+            headers: Object.fromEntries(res.headers.entries())
+          });
+        } catch (fetchErr) {
+          clearTimeout(timeoutId);
+          console.error('[Sync Database] Fetch error', {
+            name: fetchErr.name,
+            message: fetchErr.message,
+            stack: fetchErr.stack,
+            url
+          });
+          if (fetchErr.name === 'AbortError') {
+            throw new Error('Request timed out. The sync operation may be taking too long. Please try again or contact support if the issue persists.');
+          } else if (fetchErr.message === 'Failed to fetch') {
+            throw new Error('Network error: Unable to reach the server. Please check your connection and try again.');
+          }
+          throw fetchErr;
+        }
+        clearTimeout(timeoutId);
+        
+        if(!res.ok){
+          let errorText = 'Unknown error';
+          try {
+            errorText = await res.text();
+            // Try to parse as JSON for better error message
+            try {
+              const errorJson = JSON.parse(errorText);
+              errorText = errorJson.message || errorJson.error || errorText;
+            } catch {}
+          } catch {}
+          throw new Error(`API Error (${res.status}): ${errorText}`);
+        }
+        
+        const data = await res.json();
+        const count = data.cleanedCount || 0;
+        const updatedScheduled = data.scheduledTimesUpdated || 0;
+        
+        let statusMsg = `Database synced: ${count} callback${count !== 1 ? 's' : ''} moved to history.`;
+        if (updatedScheduled > 0) {
+          statusMsg += ` ${updatedScheduled} scheduled time${updatedScheduled !== 1 ? 's' : ''} updated.`;
+        }
+        setStatus(statusMsg);
+        
+        // Refresh the table to show updated list
+        nextToken = null;
+        clearTable();
+        fetchCallbacks(true);
+      } catch(err){
+        console.error('[Sync Database] Error:', err);
+        let errorMsg = 'Sync failed';
+        if (err?.message) {
+          errorMsg = err.message;
+        } else if (err?.name === 'TypeError' && err?.message?.includes('fetch')) {
+          errorMsg = 'Network error: Unable to connect to the server. Please check your connection.';
+        }
+        setStatus(errorMsg, true);
+      } finally {
+        btn.textContent = prev;
+        btn.disabled = false;
+      }
+    });
+    
+    $('refreshBtn').addEventListener('click', ()=>{ nextToken=null; clearTable(); fetchCallbacks(true); });
+    $('loadMoreBtn').addEventListener('click', ()=> fetchCallbacks(false));
+    $('filter').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ nextToken=null; clearTable(); fetchCallbacks(true);} });
+
+    // History controls
+    $('historyRefreshBtn').addEventListener('click', ()=>{ clearHistoryTable(); fetchHistory(true); });
+    $('loadMoreHistoryBtn').addEventListener('click', ()=> fetchHistory(false));
+    $('historyFilter').addEventListener('keydown', (e)=>{ if(e.key==='Enter'){ clearHistoryTable(); fetchHistory(true);} });
+    $('historyExportCSVBtn').addEventListener('click', ()=> exportHistoryToCSV());
+    $('historyExportXLSXBtn').addEventListener('click', ()=> exportHistoryToXLSX());
+    
+    // Analytics controls
+    if ($('analyticsChartType')) {
+      $('analyticsChartType').value = selectedChartType;
+      $('analyticsChartType').addEventListener('change', (e) => {
+        selectedChartType = e.target.value;
+        localStorage.setItem('analyticsChartType', selectedChartType);
+        // Regenerate chart if it exists
+        if (analyticsChart) {
+          calculateAnalytics();
+        }
+      });
+    }
+    
+    // Date range selector
+    if ($('analyticsDateRange')) {
+      $('analyticsDateRange').addEventListener('change', (e) => {
+        const value = e.target.value;
+        const customDateRange = $('analyticsCustomDateRange');
+        if (customDateRange) {
+          customDateRange.style.display = value === 'custom' ? 'block' : 'none';
+        }
+        // Recalculate analytics if chart already exists
+        if (analyticsChart) {
+          calculateAnalytics();
+        }
+      });
+    }
+    
+    // Custom date inputs
+    if ($('analyticsStartDate') && $('analyticsEndDate')) {
+      $('analyticsStartDate').addEventListener('change', () => {
+        if (analyticsChart && $('analyticsDateRange')?.value === 'custom') {
+          calculateAnalytics();
+        }
+      });
+      $('analyticsEndDate').addEventListener('change', () => {
+        if (analyticsChart && $('analyticsDateRange')?.value === 'custom') {
+          calculateAnalytics();
+        }
+      });
+    }
+    
+    // Queue dropdown toggle
+    if ($('analyticsQueueDropdownBtn')) {
+      $('analyticsQueueDropdownBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = $('analyticsQueueDropdown');
+        if (dropdown) {
+          const isVisible = dropdown.style.display !== 'none';
+          dropdown.style.display = isVisible ? 'none' : 'block';
+        }
+      });
+    }
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const dropdown = $('analyticsQueueDropdown');
+      const btn = $('analyticsQueueDropdownBtn');
+      if (dropdown && btn && !dropdown.contains(e.target) && !btn.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
+    
+    $('analyticsRefreshBtn').addEventListener('click', async ()=> {
+      // Refresh queue list first to pick up any new queues, then calculate analytics
+      await loadAnalyticsQueues();
+      calculateAnalytics();
+    });
+    $('analyticsSelectAllBtn').addEventListener('click', ()=> selectAllQueues(true));
+    $('analyticsDeselectAllBtn').addEventListener('click', ()=> selectAllQueues(false));
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const viewName = tab.getAttribute('data-view');
+        switchView(viewName);
+      });
+    });
+
+    // Table sorting functionality
+    const getCellValue = (tr, idx) => {
+      const cell = tr.children[idx];
+      // Check if cell has data-sort attribute for proper sorting (e.g., timestamps)
+      const sortValue = cell.getAttribute('data-sort');
+      if (sortValue !== null && sortValue !== '') {
+        return sortValue;
+      }
+      return cell.innerText || cell.textContent;
+    };
+    const comparer = (idx, asc) => (a, b) => {
+        const v1 = getCellValue(a, idx);
+        const v2 = getCellValue(b, idx);
+        // Numeric sort if both values are numbers (convert to number first)
+        const n1 = parseFloat(v1);
+        const n2 = parseFloat(v2);
+        if (!isNaN(n1) && !isNaN(n2)) {
+            return asc ? n1 - n2 : n2 - n1;
+        }
+        // String comparison for non-numeric values
+        return asc ? String(v1).localeCompare(String(v2)) : String(v2).localeCompare(String(v1));
+    };
+    document.querySelectorAll('th.sortable').forEach(th => th.addEventListener('click', function () {
+        const table = th.closest('table');
+        const tbody = table.querySelector('tbody') || table;
+        const ths = Array.from(th.parentNode.children);
+        const idx = ths.indexOf(th);
+        const asc = !th.classList.contains('asc');
+        
+        // Remove sort indicators and classes from all headers
+        ths.forEach(header => {
+            header.classList.remove('asc', 'desc');
+            // Remove any existing sort indicator spans
+            const indicator = header.querySelector('.sort-indicator');
+            if (indicator) indicator.remove();
+        });
+        
+        // Add class and indicator to clicked header
+        th.classList.toggle('asc', asc);
+        th.classList.toggle('desc', !asc);
+        
+        // Add visual sort indicator using JavaScript (not CSS) to avoid encoding issues
+        const indicator = document.createElement('span');
+        indicator.className = 'sort-indicator';
+        indicator.style.marginLeft = '6px';
+        indicator.style.fontSize = '10px';
+        indicator.style.color = 'var(--accent)';
+        indicator.textContent = asc ? '▲' : '▼';
+        th.appendChild(indicator);
+        
+        // Sort the rows
+        Array.from(tbody.querySelectorAll('tr'))
+            .sort(comparer(idx, asc))
+            .forEach(tr => tbody.appendChild(tr));
+    }));
+  });
+</script>
+
+
+</body>
+</html>

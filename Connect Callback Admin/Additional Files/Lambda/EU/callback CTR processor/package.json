@@ -1,0 +1,6 @@
+{
+  "name": "callback-ctr-processor-eu",
+  "version": "1.0.0",
+  "description": "Process Contact Trace Records to handle callback outcomes (EU)",
+  "main": "callback-ctr-processor-EU.js"
+}

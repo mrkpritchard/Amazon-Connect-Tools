@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Callback Admin Tool - Documentation</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 210mm;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+        }
+        
+        h1 {
+            color: #EF7200;
+            border-bottom: 3px solid #EF7200;
+            padding-bottom: 10px;
+            margin-top: 30px;
+            page-break-after: avoid;
+        }
+        
+        h2 {
+            color: #1f2937;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 8px;
+            margin-top: 25px;
+            page-break-after: avoid;
+        }
+        
+        h3 {
+            color: #4b5563;
+            margin-top: 20px;
+            page-break-after: avoid;
+        }
+        
+        h4 {
+            color: #6b7280;
+            margin-top: 15px;
+        }
+        
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        
+        pre {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-left: 4px solid #EF7200;
+            padding: 15px;
+            overflow-x: auto;
+            page-break-inside: avoid;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+        }
+        
+        blockquote {
+            border-left: 4px solid #EF7200;
+            padding-left: 15px;
+            margin-left: 0;
+            color: #6b7280;
+            font-style: italic;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            page-break-inside: avoid;
+        }
+        
+        th, td {
+            border: 1px solid #e5e7eb;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background: #EF7200;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 5px 0;
+        }
+        
+        a {
+            color: #EF7200;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        .toc {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 20px;
+            margin: 20px 0;
+            page-break-inside: avoid;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            margin: 8px 0;
+        }
+        
+        .toc a {
+            color: #1f2937;
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            color: #EF7200;
+        }
+        
+        .version-info {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .warning {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #e5e7eb;
+            margin: 30px 0;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #e5e7eb;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 15mm;
+            }
+            
+            h1, h2, h3 {
+                page-break-after: avoid;
+            }
+            
+            pre, blockquote {
+                page-break-inside: avoid;
+            }
+            
+            .toc {
+                page-break-after: always;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Callback Admin Portal - Documentation</h1>
+    
+    <div class="version-info">
+        <strong>Version 1.14</strong> - Last Updated: November 24, 2025
+    </div>
+
+    <div class="toc">
+        <h2>Table of Contents</h2>
+        <ul>
+            <li><a href="#overview">Overview</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#active-callbacks">Active Callbacks View</a></li>
+            <li><a href="#history">History View</a></li>
+            <li><a href="#analytics">Analytics View</a></li>
+            <li><a href="#configuration">Configuration</a></li>
+            <li><a href="#api-endpoints">API Endpoints</a></li>
+            <li><a href="#troubleshooting">Troubleshooting</a></li>
+        </ul>
+    </div>
+
+    <hr>
+
+    <h2 id="overview">Overview</h2>
+    <p>The Callback Admin Portal is a web-based tool for managing Amazon Connect callbacks. It provides administrators with a comprehensive interface to view, manage, and analyze callback data across multiple AWS regions (US and EU).</p>
+
+    <h3>Key Capabilities</h3>
+    <ul>
+        <li>View and manage active callbacks in real-time</li>
+        <li>Review callback history with detailed status information</li>
+        <li>Analyze callback data with interactive charts and tables</li>
+        <li>Remove pending callbacks directly from Amazon Connect</li>
+        <li>Export data to CSV or Excel formats</li>
+        <li>Support for multiple timezones and regions</li>
+    </ul>
+
+    <hr>
+
+    <h2 id="features">Features</h2>
+
+    <h3>Active Callbacks Management</h3>
+    <ul>
+        <li><strong>Real-time View:</strong> View all pending callbacks with live updates</li>
+        <li><strong>Filtering:</strong> Filter by phone number, Contact ID, or Queue name</li>
+        <li><strong>Sorting:</strong> Sort columns by clicking column headers</li>
+        <li><strong>Remove Callback:</strong> Stop pending callbacks directly via Amazon Connect StopContact API</li>
+        <li><strong>Confirmation Dialog:</strong> Safety confirmation before removing callbacks</li>
+        <li><strong>Pagination:</strong> Control page size and load more results</li>
+        <li><strong>Timezone Support:</strong> View times in your preferred timezone</li>
+    </ul>
+
+    <h3>History View</h3>
+    <ul>
+        <li><strong>Completed Callbacks:</strong> View all completed or deleted callbacks</li>
+        <li><strong>Status Column:</strong> See "Completed" or "Deleted" status for each callback</li>
+        <li><strong>Pagination:</strong> View 25 items at a time with "Load more" functionality</li>
+        <li><strong>Export:</strong> Export all history data to CSV or Excel (includes all items, not just displayed ones)</li>
+        <li><strong>Time in Queue:</strong> See how long callbacks waited before completion</li>
+        <li><strong>Linked Contacts:</strong> View related contact IDs for callback chains</li>
+    </ul>
+
+    <h3>Analytics View</h3>
+    <ul>
+        <li><strong>Multiple Chart Types:</strong>
+            <ul>
+                <li><strong>Bar Chart:</strong> Horizontal bar chart showing distribution</li>
+                <li><strong>Pie Chart:</strong> Circular chart with percentages</li>
+                <li><strong>Table View:</strong> Detailed table with queues/dates, amounts, and percentages</li>
+            </ul>
+        </li>
+        <li><strong>Date Range Selection:</strong>
+            <ul>
+                <li>Today, Yesterday</li>
+                <li>Current Week, Last Week</li>
+                <li>Current Month, Last Month</li>
+                <li>Custom Date Range</li>
+            </ul>
+        </li>
+        <li><strong>Queue Selection:</strong> Filter analytics by specific queues (multi-select)</li>
+        <li><strong>Date-based Grouping:</strong> For week/month views, see dates on x-axis instead of numbers</li>
+        <li><strong>Queue Breakdown:</strong> Hover over date bars to see detailed queue breakdown</li>
+        <li><strong>Expandable Table Rows:</strong> Click date rows in table view to see queue breakdown</li>
+        <li><strong>Statistics:</strong> Total callbacks, average time in queue, selected queues count</li>
+    </ul>
+
+    <h3>Sync Database</h3>
+    <ul>
+        <li><strong>Manual Sync:</strong> "Sync Database" button (formerly "Cleanup Completed")</li>
+        <li><strong>Verification:</strong> Checks Amazon Connect to verify callback status</li>
+        <li><strong>Auto-Migration:</strong> Moves completed callbacks from active to history table</li>
+        <li><strong>On-Demand:</strong> Only runs when button is clicked (no automatic execution on page load)</li>
+    </ul>
+
+    <hr>
+
+    <h2 id="active-callbacks">Active Callbacks View</h2>
+
+    <h3>Removing a Callback</h3>
+    <p>To remove a pending callback:</p>
+    <ol>
+        <li>Locate the callback in the Active Callbacks table</li>
+        <li>Click the <strong>"Remove"</strong> button in the Action column (right side)</li>
+        <li>Confirm the action in the dialog: "Are you sure you want to end this callback?"</li>
+        <li>Click <strong>"Confirm"</strong> to proceed or <strong>"Cancel"</strong> to abort</li>
+    </ol>
+
+    <div class="warning">
+        <strong>Important:</strong> Removing a callback will:
+        <ul>
+            <li>Stop the callback in Amazon Connect using the StopContact API</li>
+            <li>Move the callback to the History table</li>
+            <li>Mark it with status "Deleted"</li>
+            <li>Add a note "Manually removed by admin"</li>
+        </ul>
+        This action cannot be undone.
+    </div>
+
+    <h3>Filtering and Sorting</h3>
+    <ul>
+        <li>Use the filter box to search by phone number, Contact ID, or Queue name</li>
+        <li>Click column headers to sort (ascending/descending)</li>
+        <li>Adjust page size to show more or fewer results per page</li>
+    </ul>
+
+    <hr>
+
+    <h2 id="history">History View</h2>
+
+    <h3>Viewing History</h3>
+    <ul>
+        <li>History shows completed and deleted callbacks</li>
+        <li>By default, displays 25 items at a time</li>
+        <li>Use "Load more" to see additional items (loads 25 more each time)</li>
+        <li>Change page size to adjust how many items are displayed initially</li>
+    </ul>
+
+    <h3>Status Column</h3>
+    <p>The Status column shows:</p>
+    <ul>
+        <li><strong>"Completed":</strong> Callback was successfully completed</li>
+        <li><strong>"Deleted":</strong> Callback was manually removed by an admin</li>
+    </ul>
+
+    <h3>Exporting History</h3>
+    <p>Export functionality includes <strong>all</strong> history items, not just the currently displayed ones:</p>
+    <ul>
+        <li><strong>Export CSV:</strong> Downloads all history as a CSV file</li>
+        <li><strong>Export Excel:</strong> Downloads all history as an Excel (.xlsx) file</li>
+    </ul>
+
+    <hr>
+
+    <h2 id="analytics">Analytics View</h2>
+
+    <h3>Chart Types</h3>
+
+    <h4>Bar Chart</h4>
+    <ul>
+        <li>Horizontal bar chart showing callback distribution</li>
+        <li>For date-based views (week/month), dates appear on the y-axis</li>
+        <li>Hover over bars to see detailed information</li>
+        <li>For date-grouped charts, hover shows queue breakdown</li>
+    </ul>
+
+    <h4>Pie Chart</h4>
+    <ul>
+        <li>Circular chart with color-coded segments</li>
+        <li>Shows percentages for each queue or date</li>
+        <li>Legend on the right side</li>
+    </ul>
+
+    <h4>Table View</h4>
+    <ul>
+        <li>Detailed table showing:
+            <ul>
+                <li><strong>Queue / Date:</strong> Queue name or date</li>
+                <li><strong>Amount:</strong> Number of callbacks</li>
+                <li><strong>Percentage:</strong> Percentage of total</li>
+            </ul>
+        </li>
+        <li>Sorted by amount (descending) by default</li>
+        <li>For date-grouped views:
+            <ul>
+                <li>Click a date row to expand and see queue breakdown</li>
+                <li>Queue breakdown appears directly under the clicked date</li>
+                <li>Click again to collapse</li>
+                <li>Indented rows show individual queue contributions</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>Date Range Options</h3>
+    <table>
+        <tr>
+            <th>Option</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>Today</td>
+            <td>Callbacks from today only</td>
+        </tr>
+        <tr>
+            <td>Yesterday</td>
+            <td>Callbacks from yesterday</td>
+        </tr>
+        <tr>
+            <td>Current Week</td>
+            <td>Callbacks from the current week (Monday to Sunday)</td>
+        </tr>
+        <tr>
+            <td>Last Week</td>
+            <td>Callbacks from the previous week</td>
+        </tr>
+        <tr>
+            <td>Current Month</td>
+            <td>Callbacks from the current month</td>
+        </tr>
+        <tr>
+            <td>Last Month</td>
+            <td>Callbacks from the previous month</td>
+        </tr>
+        <tr>
+            <td>Custom Range</td>
+            <td>Select start and end dates manually</td>
+        </tr>
+    </table>
+
+    <h3>Queue Breakdown on Hover</h3>
+    <p>When viewing date-grouped charts (week/month views):</p>
+    <ul>
+        <li>Hover over any bar to see a detailed tooltip</li>
+        <li>Tooltip shows total callbacks for that date</li>
+        <li>Below the total, see breakdown by queue with counts and percentages</li>
+        <li>Queues are sorted by count (highest first)</li>
+    </ul>
+
+    <hr>
+
+    <h2 id="configuration">Configuration</h2>
+
+    <h3>Timezone Selection</h3>
+    <p>The portal supports comprehensive timezone selection with 100+ timezones organized by region:</p>
+    <ul>
+        <li>Americas (North, Central, South)</li>
+        <li>Europe</li>
+        <li>Asia</li>
+        <li>Africa</li>
+        <li>Oceania</li>
+    </ul>
+    <p>Timezone preference is saved in browser localStorage and persists across sessions.</p>
+
+    <h3>Region Selection</h3>
+    <p>The portal supports multiple AWS regions:</p>
+    <ul>
+        <li><strong>US (N. Virginia):</strong> us-east-1 region</li>
+        <li><strong>EU (Frankfurt):</strong> eu-central-1 region</li>
+    </ul>
+    <p>Region selection affects which DynamoDB tables and Connect instances are accessed.</p>
+
+    <h3>Theme Selection</h3>
+    <p>Toggle between light and dark themes using the theme button in the header. Theme preference is saved in localStorage.</p>
+
+    <h3>Custom Domain Support</h3>
+    <p>The portal supports custom domain aliases (e.g., https://your-portal-domain.example.com). CORS is configured to allow requests from approved domains while maintaining security.</p>
+
+    <hr>
+
+    <h2 id="api-endpoints">API Endpoints</h2>
+
+    <h3>Callback Management</h3>
+    <table>
+        <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Description</th>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td><code>/callbacks</code></td>
+            <td>List active callbacks</td>
+        </tr>
+        <tr>
+            <td>GET</td>
+            <td><code>/callbacks/history</code></td>
+            <td>List completed/deleted callbacks</td>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td><code>/callbacks/{id}/stop</code></td>
+            <td>Stop a pending callback (uses Amazon Connect StopContact API)</td>
+        </tr>
+        <tr>
+            <td>POST</td>
+            <td><code>/callbacks/cleanup</code></td>
+            <td>Sync database - move completed callbacks to history</td>
+        </tr>
+        <tr>
+            <td>DELETE</td>
+            <td><code>/callbacks/{id}</code></td>
+            <td>Delete a callback from the active table</td>
+        </tr>
+    </table>
+
+    <hr>
+
+    <h2 id="troubleshooting">Troubleshooting</h2>
+
+    <h3>Common Issues</h3>
+
+    <h4>API Access Issues with Custom Domain</h4>
+    <ul>
+        <li>Verify CORS is configured in API Gateway</li>
+        <li>Check that the domain is in the allowed origins list</li>
+        <li>Ensure CloudFront (if used) forwards necessary headers</li>
+        <li>Check browser console for CORS errors</li>
+    </ul>
+
+    <h4>Callbacks Not Appearing</h4>
+    <ul>
+        <li>Verify correct region is selected</li>
+        <li>Check DynamoDB table names match environment variables</li>
+        <li>Ensure user has permissions for the queues being viewed</li>
+        <li>Try refreshing the page</li>
+    </ul>
+
+    <h4>Analytics Not Loading</h4>
+    <ul>
+        <li>Ensure at least one queue is selected</li>
+        <li>Check date range includes data</li>
+        <li>Verify user has access to selected queues</li>
+        <li>Check browser console for errors</li>
+    </ul>
+
+    <h4>Remove Button Not Working</h4>
+    <ul>
+        <li>Verify Amazon Connect instance ID is configured</li>
+        <li>Check Lambda has permissions for StopContact API</li>
+        <li>Ensure callback is still in pending state</li>
+        <li>Check browser console for error messages</li>
+    </ul>
+
+    <hr>
+
+    <div class="footer">
+        <p><strong>Callback Admin Portal v1.14</strong></p>
+        <p>For support or questions, contact your system administrator.</p>
+        <p>Last Updated: November 24, 2025</p>
+    </div>
+</body>
+</html>
+

@@ -1,0 +1,17 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "kinesis:GetRecords",
+        "kinesis:GetShardIterator",
+        "kinesis:DescribeStream",
+        "kinesis:DescribeStreamSummary",
+        "kinesis:ListShards",
+        "kinesis:ListStreams"
+      ],
+      "Resource": "arn:aws:kinesis:eu-central-1:YOUR_AWS_ACCOUNT_ID:stream/prod-your-org-ctr-stream"
+    }
+  ]
+}

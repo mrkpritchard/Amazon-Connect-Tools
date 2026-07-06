@@ -1,0 +1,197 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Callback Admin Portal - EU Stack (CTR Processor + Flow Lambdas + DynamoDB)
+
+Parameters:
+  ConnectInstanceId:
+    Type: String
+    Default: YOUR_CONNECT_INSTANCE_ID
+    Description: Amazon Connect Instance ID (EU)
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures:
+      - x86_64
+    Timeout: 30
+    MemorySize: 256
+
+Resources:
+  # ---- DynamoDB Tables (EU region) ----
+  CallbackTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Callback
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PhoneNumber
+          AttributeType: S
+        - AttributeName: QueueName
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PhoneNumber
+          KeyType: HASH
+        - AttributeName: QueueName
+          KeyType: RANGE
+
+  CallbackHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: CallbackHistory
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PhoneNumber
+          AttributeType: S
+        - AttributeName: ArchivedAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PhoneNumber
+          KeyType: HASH
+        - AttributeName: ArchivedAt
+          KeyType: RANGE
+
+  # ---- EU CTR Processor ----
+  CallbackCTRProcessorEU:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: callback-ctr-processor-eu
+      Description: Process CTRs from EventBridge for EU callback contacts
+      CodeUri: Additional Files/Lambda/EU/callback CTR processor/
+      Handler: callback-ctr-processor-EU.handler
+      Runtime: nodejs22.x
+      MemorySize: 256
+      Timeout: 30
+      Environment:
+        Variables:
+          CALLBACKS_TABLE: Callback
+          HISTORY_TABLE: CallbackHistory
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !Sub arn:aws:dynamodb:eu-central-1:${AWS::AccountId}:table/Callback
+                - !Sub arn:aws:dynamodb:eu-central-1:${AWS::AccountId}:table/CallbackHistory
+
+  # EventBridge Rule for EU CTR
+  CallbackCTRRuleEU:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: connect-callback-ctr-eu
+      Description: Route callback CTRs from EU Connect instance to processor
+      State: ENABLED
+      EventPattern:
+        source:
+          - aws.connect
+        detail-type:
+          - Amazon Connect Contact Trace Record
+        detail:
+          InitiationMethod:
+            - CALLBACK
+          InstanceARN:
+            - !Sub arn:aws:connect:eu-central-1:${AWS::AccountId}:instance/${ConnectInstanceId}
+      Targets:
+        - Id: CallbackCTRProcessorEU
+          Arn: !GetAtt CallbackCTRProcessorEU.Arn
+
+  CallbackCTRRuleEUPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CallbackCTRProcessorEU
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt CallbackCTRRuleEU.Arn
+
+  # ---- EU Connect Flow Lambdas ----
+  ReadCallbackEU:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: readcallback
+      Description: Read callback data - invoked by Connect flows (EU)
+      CodeUri: Additional Files/Lambda/EU/readcallback/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      MemorySize: 1024
+      Timeout: 8
+      Environment:
+        Variables:
+          TableName: Callback
+          HISTORY_TABLE: CallbackHistory
+          HistoryTableName: CallbackHistory
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:Query
+                - dynamodb:Scan
+              Resource:
+                - !Sub arn:aws:dynamodb:eu-central-1:${AWS::AccountId}:table/Callback
+                - !Sub arn:aws:dynamodb:eu-central-1:${AWS::AccountId}:table/CallbackHistory
+
+  ReadCallbackEUConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ReadCallbackEU
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceArn: !Sub arn:aws:connect:eu-central-1:${AWS::AccountId}:instance/${ConnectInstanceId}
+
+  WriteCallbackEU:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: writecallback
+      Description: Write callback data - invoked by Connect flows (EU)
+      CodeUri: Additional Files/Lambda/EU/writecallback/
+      Handler: index.handler
+      Runtime: nodejs22.x
+      MemorySize: 1024
+      Timeout: 8
+      Environment:
+        Variables:
+          TableName: Callback
+          HISTORY_TABLE: CallbackHistory
+          HistoryTableName: CallbackHistory
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:UpdateItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+              Resource:
+                - !Sub arn:aws:dynamodb:eu-central-1:${AWS::AccountId}:table/Callback
+                - !Sub arn:aws:dynamodb:eu-central-1:${AWS::AccountId}:table/CallbackHistory
+
+  WriteCallbackEUConnectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref WriteCallbackEU
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceArn: !Sub arn:aws:connect:eu-central-1:${AWS::AccountId}:instance/${ConnectInstanceId}
+
+Outputs:
+  CTRProcessorEUName:
+    Description: EU CTR Processor Lambda function name
+    Value: !Ref CallbackCTRProcessorEU
+  ReadCallbackEUName:
+    Description: EU Read Callback Lambda function name
+    Value: !Ref ReadCallbackEU
+  WriteCallbackEUName:
+    Description: EU Write Callback Lambda function name
+    Value: !Ref WriteCallbackEU
