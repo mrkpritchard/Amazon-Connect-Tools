@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "connect:GetMetricData",
+        "connect:GetMetricDataV2",
+        "connect:ListQueues",
+        "connect:DescribeQueue",
+        "connect:GetCurrentMetricData"
+      ],
+      "Resource": [
+        "arn:aws:connect:eu-central-1:*:instance/YOUR_CONNECT_INSTANCE_ID",
+        "arn:aws:connect:eu-central-1:*:instance/YOUR_CONNECT_INSTANCE_ID/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "connect:SearchContacts",
+        "connect:DescribeContact"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

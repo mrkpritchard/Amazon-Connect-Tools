@@ -1,0 +1,208 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Amazon Connect Call Volume Heatmap Portal
+
+Parameters:
+  ConnectInstanceId:
+    Type: String
+    Description: Amazon Connect Instance ID (e.g., 12345678-1234-1234-1234-123456789012)
+  
+  ConnectInstanceArn:
+    Type: String
+    Description: Amazon Connect Instance ARN
+  
+  AllowedOrigins:
+    Type: String
+    Description: Allowed CORS origins (comma-separated)
+    Default: '*'
+
+Conditions:
+  HasCognito: !Not [!Equals [!Ref CognitoUserPoolId, '']]
+
+Resources:
+  # Lambda Execution Role
+  HeatmapLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ConnectReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - connect:GetMetricData
+                  - connect:GetMetricDataV2
+                  - connect:ListQueues
+                  - connect:DescribeQueue
+                  - connect:GetCurrentMetricData
+                Resource:
+                  - !Ref ConnectInstanceArn
+                  - !Sub '${ConnectInstanceArn}/*'
+              - Effect: Allow
+                Action:
+                  - connect:SearchContacts
+                  - connect:DescribeContact
+                Resource: '*'
+
+  # Lambda Function
+  HeatmapLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-heatmap-api'
+      Runtime: nodejs18.x
+      Handler: lambda.handler
+      CodeUri: ./
+      MemorySize: 1024
+      Timeout: 300
+      Role: !GetAtt HeatmapLambdaRole.Arn
+      Environment:
+        Variables:
+          CONNECT_INSTANCE_ID: !Ref ConnectInstanceId
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+      Events:
+        ListQueues:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HeatmapApi
+            Path: /queues
+            Method: GET
+        GetHeatmap:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HeatmapApi
+            Path: /heatmap
+            Method: GET
+        OptionsQueues:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HeatmapApi
+            Path: /queues
+            Method: OPTIONS
+        OptionsHeatmap:
+          Type: Api
+          Properties:
+            RestApiId: !Ref HeatmapApi
+            Path: /heatmap
+            Method: OPTIONS
+
+  # API Gateway
+  HeatmapApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-api'
+      StageName: prod
+      Cors:
+        AllowOrigin: !Sub "'${AllowedOrigins}'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowMethods: "'GET,OPTIONS'"
+
+  # S3 Bucket for hosting static website (optional)
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      # S3 bucket names must be lowercase - using heatmap prefix
+      BucketName: !Sub 'heatmap-${AWS::Region}-${AWS::AccountId}'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - '*'
+            AllowedMethods:
+              - GET
+              - HEAD
+            AllowedHeaders:
+              - '*'
+
+  # S3 Bucket Policy for public read access
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: s3:GetObject
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
+
+  # CloudFront Distribution (optional, for HTTPS)
+  CloudFrontDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        Comment: !Sub '${AWS::StackName} Heatmap Portal'
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt WebsiteBucket.RegionalDomainName
+            S3OriginConfig:
+              OriginAccessIdentity: ''
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+            - GET
+            - HEAD
+            - OPTIONS
+          CachedMethods:
+            - GET
+            - HEAD
+          ForwardedValues:
+            QueryString: false
+            Cookies:
+              Forward: none
+          Compress: true
+          MinTTL: 0
+          DefaultTTL: 86400
+          MaxTTL: 31536000
+        CustomErrorResponses:
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+        PriceClass: PriceClass_100
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${HeatmapApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+    Export:
+      Name: !Sub '${AWS::StackName}-api-url'
+
+  WebsiteURL:
+    Description: S3 Website URL
+    Value: !GetAtt WebsiteBucket.WebsiteURL
+    Export:
+      Name: !Sub '${AWS::StackName}-website-url'
+
+  CloudFrontURL:
+    Description: CloudFront Distribution URL
+    Value: !GetAtt CloudFrontDistribution.DomainName
+    Export:
+      Name: !Sub '${AWS::StackName}-cloudfront-url'
+
+  LambdaFunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt HeatmapLambdaFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-lambda-arn'

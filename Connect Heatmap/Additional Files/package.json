@@ -1,0 +1,15 @@
+{
+  "name": "connect-heatmap",
+  "version": "1.0.0",
+  "description": "Amazon Connect Call Volume Heatmap Portal",
+  "main": "lambda.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-connect": "^3.700.0"
+  },
+  "devDependencies": {},
+  "author": "Example Corp",
+  "license": "ISC"
+}

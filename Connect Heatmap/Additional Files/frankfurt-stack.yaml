@@ -1,0 +1,222 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Amazon Connect Call Volume Heatmap Portal - Frankfurt (EU)
+
+Parameters:
+  LambdaCodeBucket:
+    Type: String
+    Description: S3 bucket containing the Lambda code ZIP file
+    Default: eu-connect-heatmap-deployments
+  
+  LambdaCodeKey:
+    Type: String
+    Description: S3 key for the Lambda code ZIP file
+    Default: lambda-frankfurt.zip
+
+Resources:
+  # Lambda Execution Role
+  HeatmapLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: EU-Connect-HeatMap-Lambda-Role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ConnectReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - connect:GetMetricData
+                  - connect:GetMetricDataV2
+                  - connect:ListQueues
+                  - connect:DescribeQueue
+                  - connect:GetCurrentMetricData
+                Resource:
+                  - arn:aws:connect:eu-central-1:YOUR_AWS_ACCOUNT_ID:instance/YOUR_CONNECT_INSTANCE_ID
+                  - arn:aws:connect:eu-central-1:YOUR_AWS_ACCOUNT_ID:instance/YOUR_CONNECT_INSTANCE_ID/*
+              - Effect: Allow
+                Action:
+                  - connect:SearchContacts
+                  - connect:DescribeContact
+                Resource: '*'
+
+  # Lambda Function
+  HeatmapLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: EU-Connect-HeatMap-API
+      Runtime: nodejs18.x
+      Handler: lambda.handler
+      Code:
+        S3Bucket: !Ref LambdaCodeBucket
+        S3Key: !Ref LambdaCodeKey
+      MemorySize: 1024
+      Timeout: 300
+      Role: !GetAtt HeatmapLambdaRole.Arn
+      Environment:
+        Variables:
+          CONNECT_INSTANCE_ID: YOUR_CONNECT_INSTANCE_ID
+          AWS_ACCOUNT_ID: 'YOUR_AWS_ACCOUNT_ID'
+
+  # API Gateway REST API
+  HeatmapApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: EU-Connect-HeatMap-API
+      Description: API for Connect Heatmap Portal - Frankfurt
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Gateway Authorizer (Cognito)
+  ApiAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      Name: CognitoAuthorizer
+      Type: COGNITO_USER_POOLS
+      IdentitySource: method.request.header.Authorization
+      RestApiId: !Ref HeatmapApi
+      ProviderARNs:
+        - arn:aws:cognito-idp:us-east-1:YOUR_AWS_ACCOUNT_ID:userpool/YOUR_COGNITO_USER_POOL_ID
+
+  # /queues resource
+  QueuesResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref HeatmapApi
+      ParentId: !GetAtt HeatmapApi.RootResourceId
+      PathPart: queues
+
+  QueuesMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HeatmapApi
+      ResourceId: !Ref QueuesResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref ApiAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HeatmapLambdaFunction.Arn}/invocations
+
+  QueuesOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HeatmapApi
+      ResourceId: !Ref QueuesResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # /heatmap resource
+  HeatmapResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref HeatmapApi
+      ParentId: !GetAtt HeatmapApi.RootResourceId
+      PathPart: heatmap
+
+  HeatmapMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HeatmapApi
+      ResourceId: !Ref HeatmapResource
+      HttpMethod: GET
+      AuthorizationType: COGNITO_USER_POOLS
+      AuthorizerId: !Ref ApiAuthorizer
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HeatmapLambdaFunction.Arn}/invocations
+
+  HeatmapOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref HeatmapApi
+      ResourceId: !Ref HeatmapResource
+      HttpMethod: OPTIONS
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              application/json: ''
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+
+  # Lambda Permissions
+  QueuesLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref HeatmapLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HeatmapApi}/*/*/queues
+
+  HeatmapLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref HeatmapLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HeatmapApi}/*/*/heatmap
+
+  # API Deployment
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - QueuesMethod
+      - QueuesOptionsMethod
+      - HeatmapMethod
+      - HeatmapOptionsMethod
+    Properties:
+      RestApiId: !Ref HeatmapApi
+      StageName: prod
+
+Outputs:
+  HeatmapApiUrl:
+    Description: API Gateway URL for Heatmap Portal
+    Value: !Sub https://${HeatmapApi}.execute-api.${AWS::Region}.amazonaws.com/prod
+    Export:
+      Name: !Sub ${AWS::StackName}-ApiUrl
+  
+  LambdaFunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt HeatmapLambdaFunction.Arn

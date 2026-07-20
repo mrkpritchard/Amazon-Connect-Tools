@@ -1,0 +1,2093 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Call Volume Heatmap</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+</head>
+<body>
+  <header>
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <button class="btn secondary" onclick="window.location.href='/index.html'" title="Back to Portal">← Back</button>
+        <div style="flex-shrink: 0;">
+          <img src="logo.svg" alt="Logo" style="height: 40px; width: auto; display: block;" onerror="this.style.display='none';">
+        </div>
+        <div>
+          <h1 style="margin:0; font-size:20px; font-weight:600; color:var(--text);">Call Volume Heatmap</h1>
+        </div>
+      </div>
+      <div>
+        <button id="themeToggle" class="btn secondary" onclick="toggleTheme()" title="Toggle dark/light mode">
+          <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Loading/Auth Check -->
+    <section class="card" id="authCheck" style="text-align: center; padding: 60px 20px;">
+      <div style="font-size: 18px; color: var(--text); margin-bottom: 12px;">
+        🔐 Checking authentication...
+      </div>
+      <div class="muted">Please wait while we verify your session</div>
+    </section>
+
+    <!-- Main Content (shown after auth check) -->
+    <div id="mainContent">
+      <!-- Tabs -->
+      <div class="tabs" id="tabs">
+        <button class="tab active" id="heatmapTab" data-view="heatmap" onclick="switchView('heatmap')">Heatmap</button>
+        <button class="tab" id="reportingTab" data-view="reporting" onclick="switchView('reporting')">Reporting</button>
+      </div>
+
+      <!-- Heatmap View -->
+      <div id="heatmapView" class="view active">
+      <!-- Controls -->
+      <section class="card">
+        <h3 style="margin:0 0 16px 0; font-size: 18px; font-weight: 600; color: var(--text);">Call Volume Heatmap</h3>
+        <div class="row">
+          <div>
+            <label for="regionSelect">Region</label>
+            <select id="regionSelect" class="input" onchange="handleRegionChange()" style="min-width: 200px;">
+              <option value="us-east-1">US (N. Virginia)</option>
+              <option value="eu-central-1">EU (Frankfurt)</option>
+              <option value="ap-northeast-1">JP (Tokyo)</option>
+              <option value="ap-southeast-1">SG (Singapore)</option>
+            </select>
+          </div>
+          <div>
+            <label for="timezoneSelect">Display Timezone</label>
+            <select id="timezoneSelect" class="input" onchange="handleTimezoneChange()" style="min-width: 300px; max-width: 400px;">
+              <option value="local">Local Time</option>
+              <optgroup label="UTC">
+                <option value="UTC">UTC (Coordinated Universal Time)</option>
+              </optgroup>
+              <optgroup label="North America - US & Canada">
+                <option value="America/New_York">Eastern Time (ET) - New York, Washington DC</option>
+                <option value="America/Chicago">Central Time (CT) - Chicago, Dallas</option>
+                <option value="America/Denver">Mountain Time (MT) - Denver, Phoenix</option>
+                <option value="America/Los_Angeles">Pacific Time (PT) - Los Angeles, Seattle</option>
+                <option value="America/Anchorage">Alaska Time (AKT) - Anchorage</option>
+                <option value="Pacific/Honolulu">Hawaii Time (HST) - Honolulu</option>
+                <option value="America/Toronto">Toronto (ET)</option>
+                <option value="America/Vancouver">Vancouver (PT)</option>
+                <option value="America/Mexico_City">Mexico City (CST)</option>
+              </optgroup>
+              <optgroup label="Europe">
+                <option value="Europe/London">London (GMT/BST)</option>
+                <option value="Europe/Paris">Paris (CET/CEST)</option>
+                <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+                <option value="Europe/Rome">Rome (CET/CEST)</option>
+                <option value="Europe/Madrid">Madrid (CET/CEST)</option>
+                <option value="Europe/Amsterdam">Amsterdam (CET/CEST)</option>
+                <option value="Europe/Brussels">Brussels (CET/CEST)</option>
+                <option value="Europe/Vienna">Vienna (CET/CEST)</option>
+                <option value="Europe/Stockholm">Stockholm (CET/CEST)</option>
+                <option value="Europe/Copenhagen">Copenhagen (CET/CEST)</option>
+                <option value="Europe/Oslo">Oslo (CET/CEST)</option>
+                <option value="Europe/Helsinki">Helsinki (EET/EEST)</option>
+                <option value="Europe/Warsaw">Warsaw (CET/CEST)</option>
+                <option value="Europe/Prague">Prague (CET/CEST)</option>
+                <option value="Europe/Budapest">Budapest (CET/CEST)</option>
+                <option value="Europe/Athens">Athens (EET/EEST)</option>
+                <option value="Europe/Lisbon">Lisbon (WET/WEST)</option>
+                <option value="Europe/Dublin">Dublin (GMT/IST)</option>
+                <option value="Europe/Moscow">Moscow (MSK)</option>
+              </optgroup>
+              <optgroup label="Asia">
+                <option value="Asia/Tokyo">Tokyo (JST)</option>
+                <option value="Asia/Shanghai">Shanghai (CST)</option>
+                <option value="Asia/Hong_Kong">Hong Kong (HKT)</option>
+                <option value="Asia/Singapore">Singapore (SGT)</option>
+                <option value="Asia/Seoul">Seoul (KST)</option>
+                <option value="Asia/Taipei">Taipei (CST)</option>
+                <option value="Asia/Bangkok">Bangkok (ICT)</option>
+                <option value="Asia/Jakarta">Jakarta (WIB)</option>
+                <option value="Asia/Manila">Manila (PHT)</option>
+                <option value="Asia/Kuala_Lumpur">Kuala Lumpur (MYT)</option>
+                <option value="Asia/Dubai">Dubai (GST)</option>
+                <option value="Asia/Riyadh">Riyadh (AST)</option>
+                <option value="Asia/Kolkata">Mumbai, New Delhi (IST)</option>
+                <option value="Asia/Karachi">Karachi (PKT)</option>
+                <option value="Asia/Dhaka">Dhaka (BST)</option>
+                <option value="Asia/Tehran">Tehran (IRST)</option>
+                <option value="Asia/Jerusalem">Jerusalem (IST/IDT)</option>
+              </optgroup>
+              <optgroup label="Australia & Pacific">
+                <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+                <option value="Australia/Melbourne">Melbourne (AEST/AEDT)</option>
+                <option value="Australia/Brisbane">Brisbane (AEST)</option>
+                <option value="Australia/Perth">Perth (AWST)</option>
+                <option value="Australia/Adelaide">Adelaide (ACST/ACDT)</option>
+                <option value="Pacific/Auckland">Auckland (NZST/NZDT)</option>
+                <option value="Pacific/Fiji">Fiji (FJT)</option>
+              </optgroup>
+              <optgroup label="South America">
+                <option value="America/Sao_Paulo">São Paulo (BRT/BRST)</option>
+                <option value="America/Buenos_Aires">Buenos Aires (ART)</option>
+                <option value="America/Lima">Lima (PET)</option>
+                <option value="America/Bogota">Bogotá (COT)</option>
+                <option value="America/Santiago">Santiago (CLT/CLST)</option>
+                <option value="America/Caracas">Caracas (VET)</option>
+              </optgroup>
+              <optgroup label="Africa">
+                <option value="Africa/Cairo">Cairo (EET/EEST)</option>
+                <option value="Africa/Johannesburg">Johannesburg (SAST)</option>
+                <option value="Africa/Lagos">Lagos (WAT)</option>
+                <option value="Africa/Nairobi">Nairobi (EAT)</option>
+                <option value="Africa/Casablanca">Casablanca (WET/WEST)</option>
+              </optgroup>
+              <optgroup label="Middle East">
+                <option value="Asia/Kuwait">Kuwait (AST)</option>
+                <option value="Asia/Bahrain">Bahrain (AST)</option>
+                <option value="Asia/Qatar">Doha (AST)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div>
+            <label for="startDate">Start Date</label>
+            <input type="date" id="startDate" class="input">
+          </div>
+          <div>
+            <label for="endDate">End Date</label>
+            <input type="date" id="endDate" class="input">
+          </div>
+        </div>
+        <div class="row" style="margin-top: 12px;">
+          <div style="min-width: 300px; max-width: 400px;">
+            <label for="queueFilter">Queues</label>
+            <input type="text" id="queueFilter" class="input" placeholder="Search queues..." style="margin-bottom: 8px;">
+            <div id="queueCheckboxContainer" style="border: 1px solid var(--border); border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto; background: var(--bg-secondary);">
+              <div style="color: var(--muted); font-size: 13px;">Loading queues...</div>
+            </div>
+          </div>
+        </div>
+        <div class="row" style="margin-top: 12px;">
+          <div class="spacer"></div>
+          <div>
+            <button class="btn primary" id="generateBtn" onclick="generateHeatmap()">Generate Heatmap</button>
+          </div>
+        </div>
+        <div class="muted" style="margin-top:6px">Select a queue and date range to visualize call patterns by hour and day of week.</div>
+      </section>
+
+      <!-- Loading Indicator -->
+      <section class="card" id="heatmapLoading" style="display:none; text-align: center; padding: 60px 20px;">
+        <div style="display: inline-block; width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: #e86c00; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 16px;"></div>
+        <div style="font-size: 16px; color: var(--text); font-weight: 500;" id="loadingText">Generating heatmap...</div>
+        <div class="muted" style="margin-top: 8px;">This may take a moment for large date ranges.</div>
+      </section>
+
+      <!-- Heatmap Display -->
+      <section class="card" id="heatmapSection" style="display:none">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+          <h3 style="margin:0; font-size: 18px; font-weight: 600; color: var(--text);">Call Volume Heatmap</h3>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <select id="heatmapViewMode" class="input" onchange="switchHeatmapView()" style="min-width: 180px; font-size: 13px;">
+              <option value="week">Combined Week</option>
+              <option value="month">Full Month (per day)</option>
+            </select>
+            <button class="btn secondary" onclick="exportHeatmapData('csv')">Export CSV</button>
+            <button class="btn secondary" onclick="exportHeatmapData('xlsx')">Export Excel</button>
+          </div>
+        </div>
+        
+        <!-- Summary Stats -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Total Calls</div>
+            <div id="totalCalls" style="font-size: 24px; font-weight: 600; color: var(--text);">0</div>
+          </div>
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Busiest Hour</div>
+            <div id="busiestHour" style="font-size: 24px; font-weight: 600; color: var(--text);">-</div>
+          </div>
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Busiest Day</div>
+            <div id="busiestDay" style="font-size: 24px; font-weight: 600; color: var(--text);">-</div>
+          </div>
+          <div style="background: var(--bg-secondary); padding: 16px; border-radius: 8px;">
+            <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Avg Calls/Hour</div>
+            <div id="avgCallsPerHour" style="font-size: 24px; font-weight: 600; color: var(--text);">0</div>
+          </div>
+        </div>
+
+        <!-- Heatmap Canvas -->
+        <div style="overflow-x: auto; overflow-y: visible;">
+          <div id="heatmapContainer" style="min-width: 800px;"></div>
+        </div>
+        
+        <!-- Legend -->
+        <div style="margin-top: 20px; display: flex; align-items: center; gap: 12px; font-size: 14px;">
+          <span style="color: var(--muted);">Call Volume:</span>
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <span style="color: var(--muted);">Low</span>
+            <div style="width: 150px; height: 20px; background: linear-gradient(to right, #e8f5e9, #fff9c4, #ffcc80, #ff8a65, #e53935); border-radius: 4px;"></div>
+            <span style="color: var(--muted);">High</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Raw Data Table -->
+      <section class="card" id="dataTableSection" style="display:none">
+        <h3 style="margin:0 0 16px 0; font-size: 18px; font-weight: 600; color: var(--text);">Hourly Call Data</h3>
+        <div style="overflow-x:auto">
+          <table id="dataTable" class="table">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>00:00</th><th>01:00</th><th>02:00</th><th>03:00</th>
+                <th>04:00</th><th>05:00</th><th>06:00</th><th>07:00</th>
+                <th>08:00</th><th>09:00</th><th>10:00</th><th>11:00</th>
+                <th>12:00</th><th>13:00</th><th>14:00</th><th>15:00</th>
+                <th>16:00</th><th>17:00</th><th>18:00</th><th>19:00</th>
+                <th>20:00</th><th>21:00</th><th>22:00</th><th>23:00</th>
+                <th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+      </div>
+      <!-- End Heatmap View -->
+
+
+
+      <!-- Reporting View -->
+      <div id="reportingView" class="view" style="display:none">
+        <section class="card">
+          <h3 style="margin:0 0 16px 0; font-size: 18px; font-weight: 600; color: var(--text);">Advanced Reporting</h3>
+          
+          <!-- Report Configuration -->
+          <div class="row" style="margin-bottom: 12px;">
+            <div>
+              <label for="reportRegionSelect">Region</label>
+              <select id="reportRegionSelect" class="input" onchange="handleReportRegionChange()">
+                <option value="us-east-1">US (N. Virginia)</option>
+                <option value="eu-central-1">EU (Frankfurt)</option>
+                <option value="ap-northeast-1">JP (Tokyo)</option>
+                <option value="ap-southeast-1">SG (Singapore)</option>
+              </select>
+            </div>
+            <div>
+              <label for="reportTimezoneSelect">Display Timezone</label>
+              <select id="reportTimezoneSelect" class="input" onchange="handleReportTimezoneChange()">
+                <option value="local">Local Time</option>
+                <optgroup label="UTC">
+                  <option value="UTC">UTC (Coordinated Universal Time)</option>
+                </optgroup>
+                <optgroup label="North America - US & Canada">
+                  <option value="America/New_York">Eastern Time (ET) - New York, Washington DC</option>
+                  <option value="America/Chicago">Central Time (CT) - Chicago, Dallas</option>
+                  <option value="America/Denver">Mountain Time (MT) - Denver, Phoenix</option>
+                  <option value="America/Los_Angeles">Pacific Time (PT) - Los Angeles, Seattle</option>
+                  <option value="America/Anchorage">Alaska Time (AKT) - Anchorage</option>
+                  <option value="Pacific/Honolulu">Hawaii Time (HST) - Honolulu</option>
+                  <option value="America/Toronto">Toronto (ET)</option>
+                  <option value="America/Vancouver">Vancouver (PT)</option>
+                  <option value="America/Mexico_City">Mexico City (CST)</option>
+                </optgroup>
+                <optgroup label="Europe">
+                  <option value="Europe/London">London (GMT/BST)</option>
+                  <option value="Europe/Paris">Paris (CET/CEST)</option>
+                  <option value="Europe/Berlin">Berlin (CET/CEST)</option>
+                  <option value="Europe/Copenhagen">Copenhagen (CET/CEST)</option>
+                </optgroup>
+                <optgroup label="Asia">
+                  <option value="Asia/Tokyo">Tokyo (JST)</option>
+                  <option value="Asia/Shanghai">Shanghai (CST)</option>
+                  <option value="Asia/Singapore">Singapore (SGT)</option>
+                  <option value="Asia/Dubai">Dubai (GST)</option>
+                </optgroup>
+                <optgroup label="Australia & Pacific">
+                  <option value="Australia/Sydney">Sydney (AEST/AEDT)</option>
+                  <option value="Australia/Melbourne">Melbourne (AEST/AEDT)</option>
+                  <option value="Pacific/Auckland">Auckland (NZST/NZDT)</option>
+                </optgroup>
+              </select>
+            </div>
+            <div>
+              <label for="reportQueueSelect">Queue</label>
+              <input type="text" id="reportQueueSelect" class="input" list="reportQueueDatalist" placeholder="Search and select queue..." autocomplete="off">
+              <datalist id="reportQueueDatalist"></datalist>
+            </div>
+          </div>
+          <div class="row" style="margin-bottom: 24px;">
+            <div>
+              <label for="reportStartDate">Start Date</label>
+              <input type="date" id="reportStartDate" class="input" />
+            </div>
+            <div>
+              <label for="reportEndDate">End Date</label>
+              <input type="date" id="reportEndDate" class="input" />
+            </div>
+          </div>
+          
+          <!-- Chart Type Selector -->
+          <div style="margin-bottom: 24px;">
+            <label for="chartType">Chart Type</label>
+            <select id="chartType" class="input" onchange="updateReportingView()">
+              <option value="bar">Bar Chart (Calls by Hour - Combined)</option>
+              <option value="barByDay">Bar Chart (Calls by Day of Week)</option>
+              <option value="barByDate">Bar Chart (Calls per Date)</option>
+              <option value="barHourByDate">Bar Chart (Hourly per Date)</option>
+              <option value="pie">Pie Chart (Distribution by Day of Week)</option>
+              <option value="pieByDate">Pie Chart (Distribution by Date)</option>
+              <option value="line">Line Chart (Hourly Trend - Combined)</option>
+              <option value="lineByDate">Line Chart (Daily Trend)</option>
+              <option value="comparison">Comparison (Two Date Ranges)</option>
+            </select>
+          </div>
+
+          <!-- Comparison Date Range (only shown for comparison view) -->
+          <div id="comparisonDates" style="display:none; margin-bottom: 24px; padding: 16px; background: var(--bg-secondary); border-radius: 8px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 15px; font-weight: 600;">Comparison Date Range</h4>
+            <div class="row">
+              <div>
+                <label for="compStartDate">Start Date</label>
+                <input type="date" id="compStartDate" class="input" />
+              </div>
+              <div>
+                <label for="compEndDate">End Date</label>
+                <input type="date" id="compEndDate" class="input" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Generate Report Button -->
+          <div style="margin-bottom: 24px;">
+            <button class="btn primary" onclick="generateReport()">Generate Report</button>
+            <button class="btn secondary" onclick="downloadChart()">Download Chart as Image</button>
+          </div>
+
+          <!-- Chart Container -->
+          <div style="background: var(--panel); padding: 20px; border-radius: 8px; margin-bottom: 24px;">
+            <canvas id="reportChart"></canvas>
+          </div>
+
+          <!-- Statistics Summary -->
+          <div id="statsContainer" style="display:none">
+            <h4 style="margin: 0 0 16px 0; font-size: 16px; font-weight: 600;">Statistics Summary</h4>
+            <div class="row" style="margin-bottom: 16px;">
+              <div style="flex: 1; padding: 16px; background: var(--bg-secondary); border-radius: 8px;">
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Total Calls</div>
+                <div style="font-size: 24px; font-weight: 600; color: var(--accent);" id="statTotalCalls">0</div>
+              </div>
+              <div style="flex: 1; padding: 16px; background: var(--bg-secondary); border-radius: 8px;">
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Avg Calls/Hour</div>
+                <div style="font-size: 24px; font-weight: 600; color: var(--accent);" id="statAvgCalls">0</div>
+              </div>
+              <div style="flex: 1; padding: 16px; background: var(--bg-secondary); border-radius: 8px;">
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Peak Hour</div>
+                <div style="font-size: 24px; font-weight: 600; color: var(--accent);" id="statPeakHour">-</div>
+              </div>
+              <div style="flex: 1; padding: 16px; background: var(--bg-secondary); border-radius: 8px;">
+                <div style="font-size: 12px; color: var(--muted); margin-bottom: 4px;">Busiest Day</div>
+                <div style="font-size: 24px; font-weight: 600; color: var(--accent);" id="statBusiestDay">-</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+      <!-- End Reporting View -->
+    </div>
+  </main>
+
+  <!-- Cognito SDK -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.7/dist/amazon-cognito-identity.min.js" crossorigin="anonymous"></script>
+  <!-- SheetJS for Excel export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Chart.js for reporting charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <script>
+  // ===== Configuration =====
+  const USER_MGMT_API_URL = 'https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod';
+  
+  const REGION_CONFIG = {
+    'us-east-1': {
+      name: 'US (N. Virginia)',
+      userPoolId: 'YOUR_COGNITO_USER_POOL_ID',
+      clientId: 'YOUR_COGNITO_APP_CLIENT_ID',
+      apiBaseUrl: 'https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod',
+      connectInstanceId: 'YOUR_CONNECT_INSTANCE_ID'
+    },
+    'eu-central-1': {
+      name: 'EU (Frankfurt)',
+      userPoolId: 'YOUR_COGNITO_USER_POOL_ID',
+      clientId: 'YOUR_COGNITO_APP_CLIENT_ID',
+      apiBaseUrl: 'https://YOUR_API_ID.execute-api.eu-central-1.amazonaws.com/prod',
+      connectInstanceId: 'YOUR_CONNECT_INSTANCE_ID'
+    },
+    'ap-northeast-1': {
+      name: 'JP (Tokyo)',
+      userPoolId: 'YOUR_COGNITO_USER_POOL_ID',
+      clientId: 'YOUR_COGNITO_APP_CLIENT_ID',
+      apiBaseUrl: 'https://YOUR_API_ID.execute-api.ap-northeast-1.amazonaws.com/prod',
+      connectInstanceId: 'YOUR_CONNECT_INSTANCE_ID'
+    },
+    'ap-southeast-1': {
+      name: 'SG (Singapore)',
+      userPoolId: 'YOUR_COGNITO_USER_POOL_ID',
+      clientId: 'YOUR_COGNITO_APP_CLIENT_ID',
+      apiBaseUrl: 'https://YOUR_API_ID.execute-api.ap-southeast-1.amazonaws.com/prod',
+      connectInstanceId: 'YOUR_CONNECT_INSTANCE_ID'
+    }
+  };
+
+  let selectedRegion = localStorage.getItem('heatmap_region') || 'us-east-1';
+  let selectedTimezone = localStorage.getItem('heatmap_timezone') || 'UTC';
+  let cognitoUser = null;
+  let idToken = null;
+  let heatmapData = null;
+  let allQueues = [];
+  let queueIdMap = {}; // Map queue names to IDs for datalist
+  let userGroups = [];
+  let isAdmin = false;
+  let userAllowedQueues = null; // Centralized queue permissions (null = not loaded, ['*'] = all)
+  let userAllowedRegions = null; // Centralized region permissions
+
+  const $ = (id) => document.getElementById(id);
+  const setStatus = (m, bad=false) => { 
+    const el=$('status'); 
+    if(!el) return; 
+    el.textContent=m||''; 
+    el.style.color = bad ? 'var(--danger)' : 'var(--muted)'; 
+  };
+
+  function getCurrentRegionConfig() {
+    return REGION_CONFIG[selectedRegion] || REGION_CONFIG['us-east-1'];
+  }
+
+  function parseJwt(token) {
+    try {
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+      }).join(''));
+      return JSON.parse(jsonPayload);
+    } catch (e) {
+      console.error('Error parsing JWT:', e);
+      return null;
+    }
+  }
+
+  // ===== Authentication =====
+  async function signIn() {
+      // Authentication removed for standalone / public use.
+      // Add your own auth provider here if you need to gate access.
+      var _mc = document.getElementById('mainContent');
+      if (_mc) _mc.style.display = 'block';
+      return true;
+    }
+
+  async function restoreSession() {
+    // Use centralized access control with Cognito group validation
+    const permissions = ({ isAdmin: true, hasAccess: true, allowedQueues: null, allowedTableIds: null, groups: [] });
+    
+    if (!permissions) {
+      // Access denied - checkToolAccess already handled redirect
+      return;
+    }
+    
+    // Access granted - extract values from permissions
+    idToken = '';
+    
+    // Parse token for user groups
+    try {
+      const payload = parseJwt(idToken);
+      userGroups = [];
+    } catch (e) {
+      console.error('Error parsing token:', e);
+      userGroups = [];
+    }
+    
+    // Check admin status from permissions
+    isAdmin = permissions.isAdmin;
+    
+    // Hide auth check and show main content
+    document.getElementById('authCheck').style.display = 'none';
+    toggleAuthUI(true);
+    
+    // Load centralized queue permissions, then load queues
+    await loadUserQueuePermissions();
+    loadQueues();
+  }
+
+  function signOut() {
+    // Clear all auth tokens
+    try { cognitoUser?.signOut(); } catch {}
+    idToken = null;
+    cognitoUser = null;
+    localStorage.removeItem('cognito_session');
+    localStorage.clear();
+    localStorage.removeItem('app_accessToken');
+    localStorage.removeItem('app_refreshToken');
+    localStorage.removeItem('app_userEmail');
+    
+    // Redirect to portal
+    window.location.href = '/index.html';
+  }
+
+  function toggleAuthUI(signedIn) {
+    $('mainContent').style.display = signedIn ? 'block' : 'none';
+    
+
+  }
+
+  // ===== Centralized Queue Permissions =====
+  async function loadUserQueuePermissions() {
+    if (isAdmin) {
+      userAllowedQueues = ['*'];
+      userAllowedRegions = ['us-east-1', 'eu-central-1', 'ap-northeast-1', 'ap-southeast-1'];
+      return;
+    }
+
+    try {
+      const allQueuesSet = new Set();
+      const allRegionsSet = new Set();
+
+      // Query queue-mappings for each of the user's Cognito groups
+      for (const group of userGroups) {
+        try {
+          const response = await fetch(`${USER_MGMT_API_URL}/user-management/queue-mappings?groupName=${encodeURIComponent(group)}`, {
+            headers: {  }
+          });
+          if (!response.ok) continue;
+          const data = await response.json();
+          const mappings = data.mappings || [];
+          // Filter to 'callback-admin' toolId (shared queue access configuration)
+          mappings.filter(m => m.toolId === 'callback-admin').forEach(m => {
+            (m.allowedQueues || []).forEach(q => allQueuesSet.add(q));
+            (m.allowedRegions || []).forEach(r => allRegionsSet.add(r));
+          });
+        } catch (e) {
+          console.error(`Error fetching queue mappings for group ${group}:`, e);
+        }
+      }
+
+      userAllowedQueues = allQueuesSet.size > 0 ? [...allQueuesSet] : [];
+      userAllowedRegions = allRegionsSet.size > 0 ? [...allRegionsSet] : [];
+
+      // Filter region dropdown based on allowed regions
+      if (userAllowedRegions.length > 0) {
+        const regionSelect = $('regionSelect');
+        const optionsToRemove = [];
+        Array.from(regionSelect.options).forEach(option => {
+          if (!userAllowedRegions.includes(option.value)) {
+            optionsToRemove.push(option);
+          }
+        });
+        optionsToRemove.forEach(option => option.remove());
+        if (!userAllowedRegions.includes(regionSelect.value) && regionSelect.options.length > 0) {
+          regionSelect.value = regionSelect.options[0].value;
+          selectedRegion = regionSelect.value;
+          localStorage.setItem('heatmap_region', selectedRegion);
+        }
+      }
+    } catch (e) {
+      console.error('Error loading user queue permissions:', e);
+      userAllowedQueues = [];
+      userAllowedRegions = [];
+    }
+  }
+
+  // ===== Region Handling =====
+  function handleRegionChange() {
+    selectedRegion = $('regionSelect').value;
+    localStorage.setItem('heatmap_region', selectedRegion);
+    loadQueues();
+  }
+  
+  function handleTimezoneChange() {
+    selectedTimezone = $('timezoneSelect').value;
+    localStorage.setItem('heatmap_timezone', selectedTimezone);
+    
+    // If heatmap is already generated, re-render with new timezone using current view mode
+    if (heatmapData) {
+      switchHeatmapView();
+    }
+  }
+
+  // ===== Queue Loading =====
+  async function loadQueues() {
+    if (!idToken) return;
+    
+    const config = getCurrentRegionConfig();
+    setStatus('Loading queues…');
+    
+    try {
+      const response = await fetch(`${config.apiBaseUrl}/queues`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load queues: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      allQueues = data.queues || [];
+      
+      // Filter queues based on configuration
+      const filteredQueues = getFilteredQueues(allQueues);
+      
+      // Store all queues for filtering
+      window.allFilteredQueues = filteredQueues;
+      queueIdMap = {};
+      filteredQueues.forEach(queue => {
+        queueIdMap[queue.name] = queue.id;
+      });
+      
+      // Populate checkbox list
+      renderQueueCheckboxes(filteredQueues);
+      
+      // Setup search filter
+      const filterInput = $('queueFilter');
+      filterInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filtered = filteredQueues.filter(q => 
+          q.name.toLowerCase().includes(searchTerm)
+        );
+        renderQueueCheckboxes(filtered);
+      });
+      
+      setStatus(`Loaded ${filteredQueues.length} queues.`);
+    } catch (err) {
+      console.error('Error loading queues:', err);
+      setStatus('Failed to load queues.', true);
+      const container = $('queueCheckboxContainer');
+      if (container) {
+        container.innerHTML = '<div style="color: var(--error);">Error loading queues</div>';
+      }
+    }
+  }
+
+  // Render queue checkboxes
+  function renderQueueCheckboxes(queues) {
+    const container = $('queueCheckboxContainer');
+    if (!container) return;
+    
+    if (queues.length === 0) {
+      container.innerHTML = '<div style="color: var(--muted); font-size: 13px;">No queues found</div>';
+      return;
+    }
+    
+    container.innerHTML = '';
+    
+    // Add "Select All" / "Clear All" buttons
+    const controlDiv = document.createElement('div');
+    controlDiv.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);';
+    
+    const selectAllBtn = document.createElement('button');
+    selectAllBtn.textContent = 'Select All';
+    selectAllBtn.className = 'btn secondary';
+    selectAllBtn.style.cssText = 'padding: 4px 8px; font-size: 12px;';
+    selectAllBtn.onclick = function() {
+      container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = true);
+    };
+    
+    const clearAllBtn = document.createElement('button');
+    clearAllBtn.textContent = 'Clear All';
+    clearAllBtn.className = 'btn secondary';
+    clearAllBtn.style.cssText = 'padding: 4px 8px; font-size: 12px;';
+    clearAllBtn.onclick = function() {
+      container.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+    };
+    
+    controlDiv.appendChild(selectAllBtn);
+    controlDiv.appendChild(clearAllBtn);
+    container.appendChild(controlDiv);
+    
+    // Add checkboxes for each queue
+    queues.forEach(queue => {
+      const label = document.createElement('label');
+      label.style.cssText = 'display: flex; align-items: center; padding: 4px 0; cursor: pointer; font-size: 13px;';
+      
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.value = queue.name;
+      checkbox.style.cssText = 'margin-right: 8px; cursor: pointer;';
+      
+      const text = document.createElement('span');
+      text.textContent = queue.name;
+      
+      label.appendChild(checkbox);
+      label.appendChild(text);
+      container.appendChild(label);
+    });
+  }
+
+  // ===== Heatmap Generation =====
+  async function generateHeatmap() {
+    // Get selected queues from checkboxes
+    const container = $('queueCheckboxContainer');
+    const checkedBoxes = container.querySelectorAll('input[type="checkbox"]:checked');
+    const selectedQueueNames = Array.from(checkedBoxes).map(cb => cb.value);
+    const selectedQueueIds = selectedQueueNames.map(name => queueIdMap[name]).filter(id => id);
+    
+    const startDate = $('startDate').value;
+    const endDate = $('endDate').value;
+
+    if (selectedQueueIds.length === 0) {
+      setStatus('Please select at least one queue.', true);
+      return;
+    }
+    if (!startDate || !endDate) {
+      setStatus('Please select start and end dates.', true);
+      return;
+    }
+
+    // Show loading indicator, hide previous results
+    $('heatmapLoading').style.display = 'block';
+    $('heatmapSection').style.display = 'none';
+    $('dataTableSection').style.display = 'none';
+    $('generateBtn').disabled = true;
+    $('generateBtn').textContent = 'Loading...';
+    setStatus(`Generating heatmap for ${selectedQueueIds.length} queue(s)…`);
+    
+    try {
+      const config = getCurrentRegionConfig();
+      const url = new URL(`${config.apiBaseUrl}/heatmap`);
+      // Send comma-separated queue IDs for multi-queue support
+      url.searchParams.set('queueId', selectedQueueIds.join(','));
+      url.searchParams.set('startDate', startDate);
+      url.searchParams.set('endDate', endDate);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch heatmap data: ${response.statusText}`);
+      }
+
+      heatmapData = await response.json();
+      
+      // Reset view mode to combined week by default
+      $('heatmapViewMode').value = 'week';
+      
+      renderHeatmap(heatmapData);
+      renderDataTable(heatmapData);
+      updateSummaryStats(heatmapData);
+      
+      $('heatmapSection').style.display = 'block';
+      $('dataTableSection').style.display = 'block';
+      setStatus('Heatmap generated successfully.');
+    } catch (err) {
+      console.error('Error generating heatmap:', err);
+      setStatus('Failed to generate heatmap.', true);
+    } finally {
+      $('heatmapLoading').style.display = 'none';
+      $('generateBtn').disabled = false;
+      $('generateBtn').textContent = 'Generate Heatmap';
+    }
+  }
+
+  // ===== Timezone Conversion =====
+  function getTimezoneOffset(timezone) {
+    // Get the hour offset between UTC and the selected timezone
+    // Using current date to account for DST
+    if (timezone === 'local') {
+      // Get local timezone offset
+      const now = new Date();
+      return -now.getTimezoneOffset() / 60; // getTimezoneOffset returns minutes, negative value
+    }
+    
+    const now = new Date();
+    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const tzDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+    const offset = Math.round((tzDate - utcDate) / (1000 * 60 * 60));
+    return offset;
+  }
+  
+  function convertHeatmapToTimezone(heatmapData, timezone) {
+    // Convert UTC heatmap data to specified timezone
+    if (timezone === 'UTC') return heatmapData;
+    
+    const offset = getTimezoneOffset(timezone);
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const convertedData = Array(7).fill(null).map(() => Array(24).fill(0));
+    
+    // Shift each hour by the offset
+    for (let day = 0; day < 7; day++) {
+      for (let hour = 0; hour < 24; hour++) {
+        const callCount = heatmapData[day][hour];
+        let newHour = hour + offset;
+        let newDay = day;
+        
+        // Handle day wraparound
+        if (newHour < 0) {
+          newHour += 24;
+          newDay = (day - 1 + 7) % 7;
+        } else if (newHour >= 24) {
+          newHour -= 24;
+          newDay = (day + 1) % 7;
+        }
+        
+        convertedData[newDay][newHour] += callCount;
+      }
+    }
+    
+    return convertedData;
+  }
+
+  // ===== Heatmap Rendering =====
+  function renderHeatmap(data) {
+    const container = $('heatmapContainer');
+    container.innerHTML = '';
+
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const hours = Array.from({length: 24}, (_, i) => i);
+    
+    // Convert data to selected timezone
+    const convertedHeatmap = convertHeatmapToTimezone(data.heatmap, selectedTimezone);
+    
+    // Find max value for color scaling
+    const maxCalls = Math.max(...convertedHeatmap.flat());
+    
+    // Create heatmap grid
+    const table = document.createElement('table');
+    table.style.borderCollapse = 'collapse';
+    table.style.width = '100%';
+    
+    // Header row with hours
+    const headerRow = document.createElement('tr');
+    const emptyCell = document.createElement('th');
+    emptyCell.style.padding = '8px';
+    emptyCell.style.textAlign = 'left';
+    emptyCell.style.fontSize = '12px';
+    emptyCell.style.color = 'var(--muted)';
+    headerRow.appendChild(emptyCell);
+    
+    hours.forEach(hour => {
+      const th = document.createElement('th');
+      th.textContent = `${hour.toString().padStart(2, '0')}:00`;
+      th.style.padding = '8px 4px';
+      th.style.textAlign = 'center';
+      th.style.fontSize = '11px';
+      th.style.color = 'var(--muted)';
+      th.style.fontWeight = '500';
+      headerRow.appendChild(th);
+    });
+    table.appendChild(headerRow);
+    
+    // Data rows
+    days.forEach((day, dayIndex) => {
+      const row = document.createElement('tr');
+      
+      // Day label
+      const dayCell = document.createElement('td');
+      dayCell.textContent = day;
+      dayCell.style.padding = '8px';
+      dayCell.style.fontWeight = '600';
+      dayCell.style.fontSize = '12px';
+      dayCell.style.color = 'var(--text)';
+      dayCell.style.whiteSpace = 'nowrap';
+      row.appendChild(dayCell);
+      
+      // Hour cells
+      hours.forEach(hour => {
+        const cell = document.createElement('td');
+        const callCount = convertedHeatmap[dayIndex]?.[hour] || 0;
+        
+        // Color intensity based on call volume
+        const intensity = maxCalls > 0 ? callCount / maxCalls : 0;
+        const color = getHeatmapColor(intensity);
+        
+        cell.style.backgroundColor = color;
+        cell.style.padding = '12px 4px';
+        cell.style.textAlign = 'center';
+        cell.style.fontSize = '11px';
+        cell.style.fontWeight = '600';
+        // Use dark text for light colors (green, yellow, light orange), white text for darker colors (orange, red)
+        cell.style.color = intensity > 0.7 ? '#ffffff' : '#1f2937';
+        cell.style.cursor = 'pointer';
+        cell.style.transition = 'transform 0.2s';
+        cell.textContent = callCount > 0 ? callCount : '';
+        cell.title = `${day} ${hour}:00 - ${callCount} calls (${selectedTimezone})`;
+        
+        // Hover effect
+        cell.addEventListener('mouseenter', () => {
+          cell.style.transform = 'scale(1.1)';
+          cell.style.zIndex = '10';
+          cell.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+        });
+        cell.addEventListener('mouseleave', () => {
+          cell.style.transform = 'scale(1)';
+          cell.style.zIndex = '1';
+          cell.style.boxShadow = 'none';
+        });
+        
+        row.appendChild(cell);
+      });
+      
+      table.appendChild(row);
+    });
+    
+    container.appendChild(table);
+  }
+
+  function getHeatmapColor(intensity) {
+    // Color gradient: green (low) to red (high)
+    if (intensity === 0) return 'var(--bg-secondary)';
+    
+    const colors = [
+      { threshold: 0.2, color: '#e8f5e9' },  // Very light green
+      { threshold: 0.4, color: '#fff9c4' },  // Light yellow
+      { threshold: 0.6, color: '#ffcc80' },  // Light orange
+      { threshold: 0.8, color: '#ff8a65' },  // Orange
+      { threshold: 1.0, color: '#e53935' }   // Red
+    ];
+    
+    for (const c of colors) {
+      if (intensity <= c.threshold) return c.color;
+    }
+    return colors[colors.length - 1].color;
+  }
+
+  // ===== Data Table Rendering =====
+  function renderDataTable(data) {
+    const tbody = $('dataTableBody');
+    tbody.innerHTML = '';
+
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // Convert data to selected timezone
+    const convertedHeatmap = convertHeatmapToTimezone(data.heatmap, selectedTimezone);
+    
+    days.forEach((day, dayIndex) => {
+      const row = document.createElement('tr');
+      
+      // Day cell
+      const dayCell = document.createElement('td');
+      dayCell.textContent = day;
+      dayCell.style.fontWeight = '600';
+      row.appendChild(dayCell);
+      
+      // Hour cells
+      let dayTotal = 0;
+      for (let hour = 0; hour < 24; hour++) {
+        const cell = document.createElement('td');
+        const callCount = convertedHeatmap[dayIndex]?.[hour] || 0;
+        cell.textContent = callCount > 0 ? callCount : '';
+        cell.style.textAlign = 'center';
+        dayTotal += callCount;
+        row.appendChild(cell);
+      }
+      
+      // Total cell
+      const totalCell = document.createElement('td');
+      totalCell.textContent = dayTotal;
+      totalCell.style.fontWeight = '600';
+      totalCell.style.textAlign = 'center';
+      totalCell.style.backgroundColor = 'var(--bg-secondary)';
+      row.appendChild(totalCell);
+      
+      tbody.appendChild(row);
+    });
+  }
+
+  // ===== View Mode Switching =====
+  function switchHeatmapView() {
+    if (!heatmapData) return;
+    const mode = $('heatmapViewMode').value;
+    if (mode === 'month') {
+      renderDailyHeatmap(heatmapData);
+      renderDailyDataTable(heatmapData);
+    } else {
+      renderHeatmap(heatmapData);
+      renderDataTable(heatmapData);
+    }
+    updateSummaryStats(heatmapData);
+  }
+
+  // ===== Daily (Full Month) Heatmap =====
+  function convertDailyHeatmapToTimezone(hourlyData, timezone) {
+    if (timezone === 'UTC') return hourlyData;
+    const offset = getTimezoneOffset(timezone);
+    const converted = Array(24).fill(0);
+    for (let h = 0; h < 24; h++) {
+      let newH = h + offset;
+      if (newH < 0) newH += 24;
+      else if (newH >= 24) newH -= 24;
+      converted[newH] += (hourlyData[h] || 0);
+    }
+    return converted;
+  }
+
+  function renderDailyHeatmap(data) {
+    const container = $('heatmapContainer');
+    container.innerHTML = '';
+    if (!data.dailyHeatmap || Object.keys(data.dailyHeatmap).length === 0) {
+      container.innerHTML = '<div class="muted" style="padding:20px; text-align:center;">No daily data available. The backend may need to be redeployed.</div>';
+      return;
+    }
+
+    const dates = Object.keys(data.dailyHeatmap).sort();
+    const hours = Array.from({length: 24}, (_, i) => i);
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    // Convert all daily data and find max
+    const convertedDaily = {};
+    dates.forEach(d => { convertedDaily[d] = convertDailyHeatmapToTimezone(data.dailyHeatmap[d], selectedTimezone); });
+    const maxCalls = Math.max(...Object.values(convertedDaily).flatMap(h => h));
+
+    const table = document.createElement('table');
+    table.style.borderCollapse = 'collapse';
+    table.style.width = '100%';
+
+    // Header row
+    const headerRow = document.createElement('tr');
+    const emptyCell = document.createElement('th');
+    emptyCell.style.cssText = 'padding:8px; text-align:left; font-size:12px; color:var(--muted); min-width:110px;';
+    headerRow.appendChild(emptyCell);
+    hours.forEach(hour => {
+      const th = document.createElement('th');
+      th.textContent = `${hour.toString().padStart(2, '0')}:00`;
+      th.style.cssText = 'padding:8px 4px; text-align:center; font-size:11px; color:var(--muted); font-weight:500;';
+      headerRow.appendChild(th);
+    });
+    // Total column header
+    const totalTh = document.createElement('th');
+    totalTh.textContent = 'Total';
+    totalTh.style.cssText = 'padding:8px 4px; text-align:center; font-size:11px; color:var(--muted); font-weight:600;';
+    headerRow.appendChild(totalTh);
+    table.appendChild(headerRow);
+
+    // Data rows - one per date
+    dates.forEach(dateStr => {
+      const row = document.createElement('tr');
+      const d = new Date(dateStr + 'T12:00:00Z');
+      const dayName = dayNames[d.getUTCDay()];
+      const displayDate = `${dayName} ${dateStr.slice(5)}`; // "Mon 03-24"
+
+      const dayCell = document.createElement('td');
+      dayCell.textContent = displayDate;
+      dayCell.style.cssText = 'padding:8px; font-weight:600; font-size:12px; color:var(--text); white-space:nowrap;';
+      // Highlight weekends
+      if (d.getUTCDay() === 0 || d.getUTCDay() === 6) {
+        dayCell.style.color = 'var(--muted)';
+        dayCell.style.fontStyle = 'italic';
+      }
+      row.appendChild(dayCell);
+
+      const hourlyData = convertedDaily[dateStr];
+      let dayTotal = 0;
+      hours.forEach(hour => {
+        const cell = document.createElement('td');
+        const callCount = hourlyData[hour] || 0;
+        dayTotal += callCount;
+        const intensity = maxCalls > 0 ? callCount / maxCalls : 0;
+        cell.style.backgroundColor = getHeatmapColor(intensity);
+        cell.style.cssText += 'padding:10px 4px; text-align:center; font-size:11px; font-weight:600; cursor:pointer; transition:transform 0.2s;';
+        cell.style.color = intensity > 0.7 ? '#ffffff' : '#1f2937';
+        cell.textContent = callCount > 0 ? callCount : '';
+        cell.title = `${displayDate} ${hour}:00 - ${callCount} calls`;
+        cell.addEventListener('mouseenter', () => { cell.style.transform = 'scale(1.1)'; cell.style.zIndex = '10'; cell.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)'; });
+        cell.addEventListener('mouseleave', () => { cell.style.transform = 'scale(1)'; cell.style.zIndex = '1'; cell.style.boxShadow = 'none'; });
+        row.appendChild(cell);
+      });
+
+      const totalCell = document.createElement('td');
+      totalCell.textContent = dayTotal;
+      totalCell.style.cssText = 'padding:10px 4px; text-align:center; font-weight:700; font-size:12px; background:var(--bg-secondary);';
+      row.appendChild(totalCell);
+
+      table.appendChild(row);
+    });
+
+    container.appendChild(table);
+  }
+
+  function renderDailyDataTable(data) {
+    const tbody = $('dataTableBody');
+    tbody.innerHTML = '';
+    if (!data.dailyHeatmap) return;
+
+    const dates = Object.keys(data.dailyHeatmap).sort();
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    dates.forEach(dateStr => {
+      const row = document.createElement('tr');
+      const d = new Date(dateStr + 'T12:00:00Z');
+      const dayName = dayNames[d.getUTCDay()];
+
+      const dayCell = document.createElement('td');
+      dayCell.textContent = `${dayName} ${dateStr.slice(5)}`;
+      dayCell.style.fontWeight = '600';
+      row.appendChild(dayCell);
+
+      const hourlyData = convertDailyHeatmapToTimezone(data.dailyHeatmap[dateStr], selectedTimezone);
+      let dayTotal = 0;
+      for (let hour = 0; hour < 24; hour++) {
+        const cell = document.createElement('td');
+        const callCount = hourlyData[hour] || 0;
+        cell.textContent = callCount > 0 ? callCount : '';
+        cell.style.textAlign = 'center';
+        dayTotal += callCount;
+        row.appendChild(cell);
+      }
+
+      const totalCell = document.createElement('td');
+      totalCell.textContent = dayTotal;
+      totalCell.style.fontWeight = '600';
+      totalCell.style.textAlign = 'center';
+      totalCell.style.backgroundColor = 'var(--bg-secondary)';
+      row.appendChild(totalCell);
+
+      tbody.appendChild(row);
+    });
+  }
+
+  // ===== Summary Statistics =====
+  function updateSummaryStats(data) {
+    // Convert data to selected timezone first
+    const convertedHeatmap = convertHeatmapToTimezone(data.heatmap, selectedTimezone);
+    
+    // Calculate total calls
+    const totalCalls = convertedHeatmap.flat().reduce((sum, val) => sum + val, 0);
+    $('totalCalls').textContent = totalCalls.toLocaleString();
+    
+    // Find busiest hour
+    let maxHourCalls = 0;
+    let busiestHourNum = 0;
+    for (let hour = 0; hour < 24; hour++) {
+      let hourTotal = 0;
+      for (let day = 0; day < 7; day++) {
+        hourTotal += convertedHeatmap[day]?.[hour] || 0;
+      }
+      if (hourTotal > maxHourCalls) {
+        maxHourCalls = hourTotal;
+        busiestHourNum = hour;
+      }
+    }
+    $('busiestHour').textContent = `${busiestHourNum.toString().padStart(2, '0')}:00`;
+    
+    // Find busiest day
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    let maxDayCalls = 0;
+    let busiestDayIndex = 0;
+    for (let day = 0; day < 7; day++) {
+      const dayTotal = (convertedHeatmap[day] || []).reduce((sum, val) => sum + val, 0);
+      if (dayTotal > maxDayCalls) {
+        maxDayCalls = dayTotal;
+        busiestDayIndex = day;
+      }
+    }
+    $('busiestDay').textContent = days[busiestDayIndex];
+    
+    // Calculate average calls per hour
+    const totalHours = 7 * 24; // 7 days * 24 hours
+    const avgCallsPerHour = totalCalls / totalHours;
+    $('avgCallsPerHour').textContent = avgCallsPerHour.toFixed(1);
+  }
+
+  // ===== Export Functions =====
+  function exportHeatmapData(format) {
+    if (!heatmapData) {
+      setStatus('No data to export.', true);
+      return;
+    }
+
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const headers = ['Day', ...Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`), 'Total'];
+    const rows = [headers];
+
+    days.forEach((day, dayIndex) => {
+      const row = [day];
+      let dayTotal = 0;
+      for (let hour = 0; hour < 24; hour++) {
+        const callCount = heatmapData.heatmap[dayIndex]?.[hour] || 0;
+        row.push(callCount);
+        dayTotal += callCount;
+      }
+      row.push(dayTotal);
+      rows.push(row);
+    });
+
+    if (format === 'csv') {
+      exportCSV(rows);
+    } else if (format === 'xlsx') {
+      exportXLSX(rows);
+    }
+  }
+
+  function exportCSV(rows) {
+    const csvContent = rows.map(row => 
+      row.map(cell => {
+        const cellStr = String(cell);
+        return cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')
+          ? `"${cellStr.replace(/"/g, '""')}"`
+          : cellStr;
+      }).join(',')
+    ).join('\n');
+
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `call-heatmap-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    setStatus('Exported to CSV');
+  }
+
+  function exportXLSX(rows) {
+    if (typeof XLSX === 'undefined') {
+      setStatus('Excel export library not loaded.', true);
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    
+    ws['!cols'] = [
+      { wch: 12 }, // Day column
+      ...Array.from({length: 24}, () => ({ wch: 6 })), // Hour columns
+      { wch: 8 } // Total column
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Call Heatmap');
+    const fileName = `call-heatmap-${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    
+    setStatus('Exported to Excel');
+  }
+
+  // ===== Theme Toggle =====
+  function initTheme() {
+    const theme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', theme);
+    updateThemeToggle(theme);
+  }
+
+  function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = current === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    updateThemeToggle(next);
+  }
+
+  function updateThemeToggle(theme) {
+    const btn = $('themeToggle');
+    if (btn) {
+      document.getElementById('themeIcon').textContent = theme === 'light' ? '🌙' : '☀️';
+      document.getElementById('themeText').textContent = theme === 'light' ? 'Dark' : 'Light';
+    }
+  }
+
+  // ===== View Switching =====
+  
+  function switchView(viewName) {
+    // Toggle between views
+    const heatmapView = $('heatmapView');
+    const reportingView = $('reportingView');
+    const heatmapTab = $('heatmapTab');
+    const reportingTab = $('reportingTab');
+    
+    // Hide all views and remove active class from all tabs
+    heatmapView.style.display = 'none';
+    reportingView.style.display = 'none';
+    heatmapTab.classList.remove('active');
+    reportingTab.classList.remove('active');
+    
+    // Show selected view and activate tab
+    if (viewName === 'heatmap') {
+      heatmapView.style.display = 'block';
+      heatmapTab.classList.add('active');
+    } else if (viewName === 'reporting') {
+      reportingView.style.display = 'block';
+      reportingTab.classList.add('active');
+      // Set region, timezone and populate queues for reporting
+      $('reportRegionSelect').value = selectedRegion;
+      $('reportTimezoneSelect').value = selectedTimezone;
+      
+      // Populate report queue datalist from allQueues
+      const reportInput = $('reportQueueSelect');
+      if (allQueues.length > 0) {
+        const filteredQueues = getFilteredQueues(allQueues);
+        const reportDatalist = $('reportQueueDatalist');
+        reportDatalist.innerHTML = '';
+        
+        filteredQueues.forEach(queue => {
+          const option = document.createElement('option');
+          option.value = queue.name;
+          option.setAttribute('data-id', queue.id);
+          reportDatalist.appendChild(option);
+          queueIdMap[queue.name] = queue.id;
+        });
+        
+        reportInput.value = '';
+        reportInput.placeholder = 'Search and select queue...';
+      } else {
+        // If queues not loaded yet, try loading them
+        loadReportQueues();
+      }
+      
+      // Set default dates
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      $('reportEndDate').valueAsDate = endDate;
+      $('reportStartDate').valueAsDate = startDate;
+    }
+  }
+  
+  function getFilteredQueues(queues) {
+    // Filter queues based on centralized permissions (from QueueGroupMappings)
+    if (!queues || queues.length === 0) return [];
+    if (isAdmin) return queues;
+    
+    if (userAllowedQueues === null || userAllowedQueues.length === 0) {
+      return []; // No queues assigned
+    }
+    if (userAllowedQueues.includes('*')) {
+      return queues; // Wildcard access
+    }
+    // Filter by queue NAME (QueueGroupMappings stores queue names)
+    return queues.filter(q => userAllowedQueues.includes(q.name));
+  }
+
+  // ===== Reporting Functions =====
+  let reportChart = null;
+  let currentHeatmapData = null;
+  let currentDailyHeatmapData = null;
+  
+  async function loadReportQueues() {
+    // Load queues for the reporting tab
+    if (!idToken) {
+      return;
+    }
+    
+    const select = $('reportQueueSelect');
+    select.innerHTML = '<option value="">Loading queues...</option>';
+    
+    try {
+      const config = getCurrentRegionConfig();
+      const response = await fetch(`${config.apiBaseUrl}/queues`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+      });
+      if (!response.ok) throw new Error(`Failed to load queues: ${response.statusText}`);
+      const data = await response.json();
+      
+      // Always update allQueues with data from the current region
+      allQueues = data.queues || [];
+      
+      const filteredQueues = getFilteredQueues(allQueues);
+      
+      const reportDatalist = $('reportQueueDatalist');
+      reportDatalist.innerHTML = '';
+      queueIdMap = {};
+      
+      filteredQueues.forEach(queue => {
+        const option = document.createElement('option');
+        option.value = queue.name;
+        option.setAttribute('data-id', queue.id);
+        reportDatalist.appendChild(option);
+        queueIdMap[queue.name] = queue.id;
+      });
+      
+      select.value = '';
+      select.placeholder = 'Search and select queue...';
+    } catch (error) {
+      select.innerHTML = '<option value="">Failed to load queues</option>';
+      alert('Failed to load queues: ' + error.message);
+    }
+  }
+  
+  function handleReportRegionChange() {
+    // Handle region change for reporting
+    const newRegion = $('reportRegionSelect').value;
+    selectedRegion = newRegion;
+    
+    // Update main region selector to match
+    $('regionSelect').value = newRegion;
+    
+    // Reload queues
+    loadReportQueues();
+  }
+  
+  function handleReportTimezoneChange() {
+    // Handle timezone change for reporting - update global timezone
+    selectedTimezone = $('reportTimezoneSelect').value;
+    localStorage.setItem('heatmap_timezone', selectedTimezone);
+    
+    // Update main timezone selector to match
+    $('timezoneSelect').value = selectedTimezone;
+  }
+  
+  function updateReportingView() {
+    const chartType = $('chartType').value;
+    const comparisonDates = $('comparisonDates');
+    
+    // Show/hide comparison date inputs
+    if (chartType === 'comparison') {
+      comparisonDates.style.display = 'block';
+      
+      // Set default comparison dates (previous 30 days)
+      const endDate = new Date($('startDate').value);
+      endDate.setDate(endDate.getDate() - 1);
+      const startDate = new Date(endDate);
+      startDate.setDate(startDate.getDate() - 30);
+      
+      $('compEndDate').valueAsDate = endDate;
+      $('compStartDate').valueAsDate = startDate;
+    } else {
+      comparisonDates.style.display = 'none';
+    }
+  }
+  
+  async function generateReport() {
+    const chartType = $('chartType').value;
+    const queueName = $('reportQueueSelect').value;
+    const queueId = queueIdMap[queueName];
+    const startDate = $('reportStartDate').value;
+    const endDate = $('reportEndDate').value;
+    
+    if (!queueId) {
+      setStatus('Please select a valid queue from the list', true);
+      return;
+    }
+    
+    if (!startDate || !endDate) {
+      setStatus('Please select start and end dates', true);
+      return;
+    }
+    
+    setStatus('Generating report...');
+    
+    try {
+      const config = getCurrentRegionConfig();
+      
+      // Fetch data for main date range
+      const url = new URL(`${config.apiBaseUrl}/heatmap`);
+      url.searchParams.set('queueId', queueId);
+      url.searchParams.set('startDate', startDate);
+      url.searchParams.set('endDate', endDate);
+
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        mode: 'cors'
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch data: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      currentHeatmapData = data.heatmap;
+      currentDailyHeatmapData = data.dailyHeatmap || null;
+      
+      if (chartType === 'comparison') {
+        // Fetch comparison data
+        const compStartDate = $('compStartDate').value;
+        const compEndDate = $('compEndDate').value;
+        
+        const compUrl = new URL(`${config.apiBaseUrl}/heatmap`);
+        compUrl.searchParams.set('queueId', queueId);
+        compUrl.searchParams.set('startDate', compStartDate);
+        compUrl.searchParams.set('endDate', compEndDate);
+
+        const compResponse = await fetch(compUrl.toString(), {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          mode: 'cors'
+        });
+
+        if (!compResponse.ok) {
+          throw new Error(`Failed to fetch comparison data: ${compResponse.statusText}`);
+        }
+
+        const compData = await compResponse.json();
+        renderComparisonChart(currentHeatmapData, compData.heatmap, startDate, endDate, compStartDate, compEndDate);
+      } else {
+        renderReportChart(chartType, currentHeatmapData, currentDailyHeatmapData);
+      }
+      
+      // Show statistics (convert to timezone for accurate stats)
+      const convertedDataForStats = convertHeatmapToTimezone(currentHeatmapData, selectedTimezone);
+      calculateAndDisplayStats(convertedDataForStats);
+      
+      setStatus('Report generated successfully');
+    } catch (error) {
+      setStatus('Failed to generate report: ' + error.message, true);
+    }
+  }
+  
+  function renderReportChart(chartType, data, dailyData) {
+    const canvas = $('reportChart');
+    const ctx = canvas.getContext('2d');
+    
+    // Show canvas and hide comparison container
+    canvas.style.display = 'block';
+    const comparisonContainer = document.getElementById('comparisonHeatmapContainer');
+    if (comparisonContainer) {
+      comparisonContainer.style.display = 'none';
+    }
+    
+    // Destroy existing chart
+    if (reportChart) {
+      reportChart.destroy();
+    }
+    
+    // Check if per-date chart type requested but no daily data available
+    const perDateTypes = ['barByDate', 'barHourByDate', 'pieByDate', 'lineByDate'];
+    if (perDateTypes.includes(chartType) && (!dailyData || Object.keys(dailyData).length === 0)) {
+      canvas.style.display = 'none';
+      let msgEl = document.getElementById('reportNoDataMsg');
+      if (!msgEl) {
+        msgEl = document.createElement('div');
+        msgEl.id = 'reportNoDataMsg';
+        msgEl.style.cssText = 'padding:24px; text-align:center; color:#888; font-size:15px;';
+        canvas.parentNode.insertBefore(msgEl, canvas);
+      }
+      msgEl.textContent = 'Per-date data not available. The backend Lambda may need redeployment.';
+      msgEl.style.display = 'block';
+      return;
+    }
+    // Hide the no-data message if present
+    const msgEl = document.getElementById('reportNoDataMsg');
+    if (msgEl) msgEl.style.display = 'none';
+    
+    // Apply timezone conversion
+    const convertedData = convertHeatmapToTimezone(data, selectedTimezone);
+    
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    if (chartType === 'bar') {
+      // Bar chart: Calls by hour (aggregated across all days)
+      const hourlyTotals = Array(24).fill(0);
+      convertedData.forEach(dayData => {
+        dayData.forEach((count, hour) => {
+          hourlyTotals[hour] += count;
+        });
+      });
+      
+      reportChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`),
+          datasets: [{
+            label: 'Total Calls',
+            data: hourlyTotals,
+            backgroundColor: 'rgba(239, 114, 0, 0.7)',
+            borderColor: 'rgba(239, 114, 0, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Calls by Hour of Day',
+              font: { size: 16, weight: 'bold' }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Number of Calls' }
+            }
+          }
+        }
+      });
+    } else if (chartType === 'barByDay') {
+      // Bar chart: Calls by day of week
+      const dailyTotals = data.map(dayData => dayData.reduce((sum, count) => sum + count, 0));
+      
+      reportChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: days,
+          datasets: [{
+            label: 'Total Calls',
+            data: dailyTotals,
+            backgroundColor: 'rgba(239, 114, 0, 0.7)',
+            borderColor: 'rgba(239, 114, 0, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Calls by Day of Week',
+              font: { size: 16, weight: 'bold' }
+            },
+            legend: { display: false }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Number of Calls' }
+            }
+          }
+        }
+      });
+    } else if (chartType === 'pie') {
+      // Pie chart: Distribution by day of week
+      const dailyTotals = convertedData.map(dayData => dayData.reduce((sum, count) => sum + count, 0));
+      
+      reportChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: days,
+          datasets: [{
+            data: dailyTotals,
+            backgroundColor: [
+              '#EF7200',
+              '#ff8a65',
+              '#ffcc80',
+              '#fff9c4',
+              '#e8f5e9',
+              '#a5d6a7',
+              '#66bb6a'
+            ]
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Call Distribution by Day of Week',
+              font: { size: 16, weight: 'bold' }
+            },
+            legend: {
+              position: 'right'
+            }
+          }
+        }
+      });
+    } else if (chartType === 'line') {
+      // Line chart: Trend by hour (all days combined)
+      const hourlyTotals = Array(24).fill(0);
+      convertedData.forEach(dayData => {
+        dayData.forEach((count, hour) => {
+          hourlyTotals[hour] += count;
+        });
+      });
+      
+      reportChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`),
+          datasets: [{
+            label: 'Total Calls',
+            data: hourlyTotals,
+            borderColor: 'rgba(239, 114, 0, 1)',
+            backgroundColor: 'rgba(239, 114, 0, 0.1)',
+            tension: 0.4,
+            fill: true
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Call Trend Throughout the Day',
+              font: { size: 16, weight: 'bold' }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: 'Number of Calls' }
+            }
+          }
+        }
+      });
+    } else if (chartType === 'barByDate') {
+      // Bar chart: Total calls per calendar date
+      const dates = Object.keys(dailyData).sort();
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dateTotals = dates.map(d => {
+        const converted = convertDailyHeatmapToTimezone(dailyData[d], selectedTimezone);
+        return converted.reduce((sum, c) => sum + c, 0);
+      });
+      const dateLabels = dates.map(d => {
+        const dt = new Date(d + 'T00:00:00');
+        return dayNames[dt.getDay()] + ' ' + d.slice(5);
+      });
+      const bgColors = dates.map(d => {
+        const dow = new Date(d + 'T00:00:00').getDay();
+        return (dow === 0 || dow === 6) ? 'rgba(200,200,200,0.6)' : 'rgba(239,114,0,0.7)';
+      });
+      const borderColors = dates.map(d => {
+        const dow = new Date(d + 'T00:00:00').getDay();
+        return (dow === 0 || dow === 6) ? 'rgba(160,160,160,1)' : 'rgba(239,114,0,1)';
+      });
+
+      reportChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: dateLabels,
+          datasets: [{
+            label: 'Total Calls',
+            data: dateTotals,
+            backgroundColor: bgColors,
+            borderColor: borderColors,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            title: { display: true, text: 'Total Calls per Date', font: { size: 16, weight: 'bold' } },
+            legend: { display: false }
+          },
+          scales: {
+            x: { ticks: { maxRotation: 90, minRotation: 45 } },
+            y: { beginAtZero: true, title: { display: true, text: 'Number of Calls' } }
+          }
+        }
+      });
+    } else if (chartType === 'barHourByDate') {
+      // Stacked bar: Hourly breakdown per date (each date = separate dataset)
+      const dates = Object.keys(dailyData).sort();
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const palette = [
+        '#EF7200','#FF9800','#FFC107','#8BC34A','#4CAF50','#009688',
+        '#00BCD4','#2196F3','#3F51B5','#673AB7','#9C27B0','#E91E63',
+        '#F44336','#795548','#607D8B','#CDDC39','#FF5722','#00E676',
+        '#1DE9B6','#FF6D00','#D500F9','#2979FF','#00B0FF','#76FF03',
+        '#F50057','#651FFF','#C6FF00','#FFAB00','#FF3D00','#00E5FF','#AA00FF'
+      ];
+      const datasets = dates.map((d, i) => {
+        const converted = convertDailyHeatmapToTimezone(dailyData[d], selectedTimezone);
+        const dt = new Date(d + 'T00:00:00');
+        const label = dayNames[dt.getDay()] + ' ' + d.slice(5);
+        return {
+          label: label,
+          data: converted,
+          backgroundColor: palette[i % palette.length] + 'B3',
+          borderColor: palette[i % palette.length],
+          borderWidth: 1
+        };
+      });
+
+      reportChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Array.from({length: 24}, (_, i) => `${i.toString().padStart(2, '0')}:00`),
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            title: { display: true, text: 'Hourly Calls per Date (Stacked)', font: { size: 16, weight: 'bold' } },
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } }
+          },
+          scales: {
+            x: { stacked: true },
+            y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Number of Calls' } }
+          }
+        }
+      });
+    } else if (chartType === 'pieByDate') {
+      // Pie chart: Distribution by calendar date
+      const dates = Object.keys(dailyData).sort();
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dateTotals = dates.map(d => {
+        const converted = convertDailyHeatmapToTimezone(dailyData[d], selectedTimezone);
+        return converted.reduce((sum, c) => sum + c, 0);
+      });
+      const dateLabels = dates.map(d => {
+        const dt = new Date(d + 'T00:00:00');
+        return dayNames[dt.getDay()] + ' ' + d.slice(5);
+      });
+      // Generate distinct colors
+      const hueStep = 360 / dates.length;
+      const colors = dates.map((_, i) => `hsl(${Math.round(i * hueStep)}, 65%, 55%)`);
+
+      reportChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: dateLabels,
+          datasets: [{ data: dateTotals, backgroundColor: colors }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          aspectRatio: 2,
+          plugins: {
+            title: { display: true, text: 'Call Distribution by Date', font: { size: 16, weight: 'bold' } },
+            legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10 } } }
+          }
+        }
+      });
+    } else if (chartType === 'lineByDate') {
+      // Line chart: Total calls per date over time
+      const dates = Object.keys(dailyData).sort();
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dateTotals = dates.map(d => {
+        const converted = convertDailyHeatmapToTimezone(dailyData[d], selectedTimezone);
+        return converted.reduce((sum, c) => sum + c, 0);
+      });
+      const dateLabels = dates.map(d => {
+        const dt = new Date(d + 'T00:00:00');
+        return dayNames[dt.getDay()] + ' ' + d.slice(5);
+      });
+
+      reportChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dateLabels,
+          datasets: [{
+            label: 'Total Calls',
+            data: dateTotals,
+            borderColor: 'rgba(239, 114, 0, 1)',
+            backgroundColor: 'rgba(239, 114, 0, 0.1)',
+            tension: 0.3,
+            fill: true,
+            pointRadius: 4,
+            pointHoverRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            title: { display: true, text: 'Daily Call Trend', font: { size: 16, weight: 'bold' } },
+            legend: { display: false }
+          },
+          scales: {
+            x: { ticks: { maxRotation: 90, minRotation: 45 } },
+            y: { beginAtZero: true, title: { display: true, text: 'Number of Calls' } }
+          }
+        }
+      });
+    }
+  }
+  
+  function renderComparisonChart(data1, data2, start1, end1, start2, end2) {
+    const canvas = $('reportChart');
+    
+    // Destroy existing chart
+    if (reportChart) {
+      reportChart.destroy();
+      reportChart = null;
+    }
+    
+    // Hide canvas and create container for dual heatmaps
+    canvas.style.display = 'none';
+    
+    let comparisonContainer = document.getElementById('comparisonHeatmapContainer');
+    if (!comparisonContainer) {
+      comparisonContainer = document.createElement('div');
+      comparisonContainer.id = 'comparisonHeatmapContainer';
+      comparisonContainer.style.cssText = 'display: flex; flex-direction: column; gap: 32px;';
+      canvas.parentNode.insertBefore(comparisonContainer, canvas);
+    }
+    comparisonContainer.innerHTML = '';
+    comparisonContainer.style.display = 'flex';
+
+    // Apply timezone conversion to both datasets
+    const convertedData1 = convertHeatmapToTimezone(data1, selectedTimezone);
+    const convertedData2 = convertHeatmapToTimezone(data2, selectedTimezone);
+
+    // Render two heatmaps stacked vertically
+    const heatmap1 = createComparisonHeatmap(convertedData1, `Period 1: ${start1} to ${end1}`);
+    const heatmap2 = createComparisonHeatmap(convertedData2, `Period 2: ${start2} to ${end2}`);
+    
+    comparisonContainer.appendChild(heatmap1);
+    comparisonContainer.appendChild(heatmap2);
+  }
+
+  function createComparisonHeatmap(data, title) {
+    const container = document.createElement('div');
+    container.style.cssText = 'width: 100%;';
+    
+    const titleDiv = document.createElement('h3');
+    titleDiv.textContent = title;
+    titleDiv.style.cssText = 'text-align: center; margin-bottom: 16px; font-size: 1.2rem; font-weight: 600; color: var(--text);';
+    container.appendChild(titleDiv);
+
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const hours = Array.from({length: 24}, (_, i) => i);
+
+    // Find max for color scaling
+    let maxValue = 0;
+    data.forEach(day => {
+      day.forEach(count => {
+        if (count > maxValue) maxValue = count;
+      });
+    });
+
+    const table = document.createElement('table');
+    table.style.cssText = 'border-collapse: collapse; width: 100%;';
+
+    // Header row with hours
+    const headerRow = document.createElement('tr');
+    const emptyCell = document.createElement('th');
+    emptyCell.style.cssText = 'padding: 8px; text-align: left; font-size: 12px; color: var(--muted);';
+    headerRow.appendChild(emptyCell);
+    
+    hours.forEach(hour => {
+      const th = document.createElement('th');
+      th.textContent = `${hour.toString().padStart(2, '0')}:00`;
+      th.style.cssText = 'padding: 8px 4px; text-align: center; font-size: 11px; color: var(--muted); font-weight: 500;';
+      headerRow.appendChild(th);
+    });
+    table.appendChild(headerRow);
+
+    // Data rows
+    days.forEach((day, dayIndex) => {
+      const row = document.createElement('tr');
+      
+      // Day label
+      const dayCell = document.createElement('td');
+      dayCell.textContent = day;
+      dayCell.style.cssText = 'padding: 8px; font-weight: 600; font-size: 12px; color: var(--text); white-space: nowrap;';
+      row.appendChild(dayCell);
+
+      // Hour cells
+      hours.forEach(hour => {
+        const cell = document.createElement('td');
+        const callCount = data[dayIndex]?.[hour] || 0;
+        const intensity = maxValue > 0 ? callCount / maxValue : 0;
+        const bgColor = getHeatmapColor(intensity);
+        const textColor = intensity > 0.7 ? '#ffffff' : '#1f2937';
+        
+        cell.textContent = callCount;
+        cell.style.cssText = `background-color: ${bgColor}; padding: 12px 4px; text-align: center; font-size: 11px; font-weight: 600; color: ${textColor}; cursor: pointer; transition: transform 0.2s;`;
+        cell.title = `${day} ${hour}:00 - ${callCount} calls`;
+        
+        // Hover effect
+        cell.addEventListener('mouseenter', () => {
+          cell.style.transform = 'scale(1.1)';
+          cell.style.zIndex = '10';
+          cell.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+        });
+        cell.addEventListener('mouseleave', () => {
+          cell.style.transform = 'scale(1)';
+          cell.style.zIndex = '1';
+          cell.style.boxShadow = 'none';
+        });
+        
+        row.appendChild(cell);
+      });
+
+      table.appendChild(row);
+    });
+
+    container.appendChild(table);
+    return container;
+  }
+  
+  function calculateAndDisplayStats(data) {
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // Calculate totals
+    let totalCalls = 0;
+    const hourlyTotals = Array(24).fill(0);
+    const dailyTotals = [];
+    
+    data.forEach((dayData, dayIndex) => {
+      let dayTotal = 0;
+      dayData.forEach((count, hour) => {
+        totalCalls += count;
+        hourlyTotals[hour] += count;
+        dayTotal += count;
+      });
+      dailyTotals.push({ day: days[dayIndex], total: dayTotal });
+    });
+    
+    // Find peak hour
+    const peakHourIndex = hourlyTotals.indexOf(Math.max(...hourlyTotals));
+    const peakHour = `${peakHourIndex.toString().padStart(2, '0')}:00`;
+    
+    // Find busiest day
+    const busiestDay = dailyTotals.reduce((max, curr) => curr.total > max.total ? curr : max, dailyTotals[0]);
+    
+    // Calculate average
+    const totalHours = data.length * 24;
+    const avgCalls = (totalCalls / totalHours).toFixed(1);
+    
+    // Display stats
+    $('statTotalCalls').textContent = totalCalls.toLocaleString();
+    $('statAvgCalls').textContent = avgCalls;
+    $('statPeakHour').textContent = peakHour;
+    $('statBusiestDay').textContent = busiestDay.day;
+    
+    $('statsContainer').style.display = 'block';
+  }
+  
+  function downloadChart() {
+    if (!reportChart) {
+      alert('Please generate a report first');
+      return;
+    }
+    
+    const canvas = $('reportChart');
+    const url = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `heatmap-report-${new Date().toISOString().split('T')[0]}.png`;
+    link.href = url;
+    link.click();
+    
+    setStatus('Chart downloaded');
+  }
+
+  // ===== Initialization =====
+  window.addEventListener('DOMContentLoaded', () => {
+    initTheme();
+    
+    // Set default date range (last 30 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+    
+    $('endDate').valueAsDate = endDate;
+    $('startDate').valueAsDate = startDate;
+    
+    // Set region and timezone selectors
+    $('regionSelect').value = selectedRegion;
+    $('timezoneSelect').value = selectedTimezone;
+    
+    // Restore session if available
+    restoreSession();
+  });
+  </script>
+</body>
+</html>
