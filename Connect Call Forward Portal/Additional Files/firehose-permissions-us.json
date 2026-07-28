@@ -1,0 +1,40 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadCtrStream",
+      "Effect": "Allow",
+      "Action": [
+        "kinesis:DescribeStream",
+        "kinesis:GetShardIterator",
+        "kinesis:GetRecords",
+        "kinesis:ListShards"
+      ],
+      "Resource": "arn:aws:kinesis:us-east-1:YOUR_AWS_ACCOUNT_ID:stream/YOUR_KINESIS_STREAM"
+    },
+    {
+      "Sid": "WriteCtrBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:AbortMultipartUpload",
+        "s3:GetBucketLocation",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:ListBucketMultipartUploads",
+        "s3:PutObject"
+      ],
+      "Resource": [
+        "arn:aws:s3:::prod-your-org-connect-events-us-east-1-YOUR_AWS_ACCOUNT_ID",
+        "arn:aws:s3:::prod-your-org-connect-events-us-east-1-YOUR_AWS_ACCOUNT_ID/*"
+      ]
+    },
+    {
+      "Sid": "FirehoseLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:us-east-1:YOUR_AWS_ACCOUNT_ID:log-group:/aws/kinesisfirehose/*:log-stream:*"
+    }
+  ]
+}

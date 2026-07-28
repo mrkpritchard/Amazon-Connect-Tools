@@ -1,0 +1,5 @@
+{
+  "gatewayresponse.header.Access-Control-Allow-Origin": "'*'",
+  "gatewayresponse.header.Access-Control-Allow-Headers": "'Content-Type,Authorization'",
+  "gatewayresponse.header.Access-Control-Allow-Methods": "'GET,OPTIONS'"
+}

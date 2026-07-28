@@ -1,0 +1,21 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "connect:SearchContacts",
+        "connect:DescribeContact",
+        "connect:GetContactAttributes",
+        "connect:ListQueues",
+        "connect:DescribeQueue",
+        "connect:DescribeUser",
+        "connect:ListQueueQuickConnects",
+        "connect:DescribeQuickConnect"
+      ],
+      "Resource": [
+        "arn:aws:connect:*:YOUR_AWS_ACCOUNT_ID:instance/*"
+      ]
+    }
+  ]
+}

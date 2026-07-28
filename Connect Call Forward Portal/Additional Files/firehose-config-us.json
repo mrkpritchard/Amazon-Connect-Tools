@@ -1,0 +1,24 @@
+{
+  "DeliveryStreamName": "YOUR_KINESIS_STREAM-to-s3",
+  "DeliveryStreamType": "KinesisStreamAsSource",
+  "KinesisStreamSourceConfiguration": {
+    "KinesisStreamARN": "arn:aws:kinesis:us-east-1:YOUR_AWS_ACCOUNT_ID:stream/YOUR_KINESIS_STREAM",
+    "RoleARN": "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/CTR-Firehose-US-Role"
+  },
+  "ExtendedS3DestinationConfiguration": {
+    "RoleARN": "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/CTR-Firehose-US-Role",
+    "BucketARN": "arn:aws:s3:::prod-your-org-connect-events-us-east-1-YOUR_AWS_ACCOUNT_ID",
+    "Prefix": "ctr/!{timestamp:yyyy}/!{timestamp:MM}/!{timestamp:dd}/!{timestamp:HH}/",
+    "ErrorOutputPrefix": "ctr-errors/!{firehose:error-output-type}/!{timestamp:yyyy}/!{timestamp:MM}/!{timestamp:dd}/",
+    "BufferingHints": {
+      "SizeInMBs": 64,
+      "IntervalInSeconds": 60
+    },
+    "CompressionFormat": "GZIP",
+    "CloudWatchLoggingOptions": {
+      "Enabled": true,
+      "LogGroupName": "/aws/kinesisfirehose/YOUR_KINESIS_STREAM-to-s3",
+      "LogStreamName": "S3Delivery"
+    }
+  }
+}

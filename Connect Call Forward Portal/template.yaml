@@ -1,0 +1,170 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Call Forward Report - Async Athena + Connect API hybrid for call forwarding analysis
+
+Parameters:
+  ConnectInstanceId:
+    Type: String
+    Description: Amazon Connect Instance ID for this region
+  AllowedOrigins:
+    Type: String
+    Description: Allowed origins for CORS
+    Default: '*'
+
+Resources:
+  # IAM Role for Lambda
+  ForwardHeatmapLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-Lambda-Role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ConnectReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - connect:SearchContacts
+                  - connect:DescribeContact
+                  - connect:GetContactAttributes
+                  - connect:ListQueues
+                  - connect:DescribeQueue
+                  - connect:DescribeUser
+                Resource:
+                  - !Sub 'arn:aws:connect:${AWS::Region}:${AWS::AccountId}:instance/${ConnectInstanceId}'
+                  - !Sub 'arn:aws:connect:${AWS::Region}:${AWS::AccountId}:instance/${ConnectInstanceId}/*'
+        - PolicyName: AthenaAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - athena:StartQueryExecution
+                  - athena:GetQueryExecution
+                  - athena:GetQueryResults
+                  - athena:StopQueryExecution
+                Resource:
+                  - !Sub 'arn:aws:athena:${AWS::Region}:${AWS::AccountId}:workgroup/primary'
+              - Effect: Allow
+                Action:
+                  - glue:GetTable
+                  - glue:GetDatabase
+                  - glue:GetPartitions
+                Resource:
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:catalog'
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:database/connect_ctr'
+                  - !Sub 'arn:aws:glue:${AWS::Region}:${AWS::AccountId}:table/connect_ctr/contact_trace_records'
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                  - s3:GetObject
+                  - s3:ListBucket
+                  - s3:GetBucketLocation
+                Resource:
+                  - !Sub 'arn:aws:s3:::aws-athena-query-results-${AWS::Region}-${AWS::AccountId}/*'
+                  - !Sub 'arn:aws:s3:::aws-athena-query-results-${AWS::Region}-${AWS::AccountId}'
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub 'arn:aws:s3:::prod-your-org-connect-events-${AWS::Region}-${AWS::AccountId}/ctr/*'
+                  - !Sub 'arn:aws:s3:::prod-your-org-connect-events-${AWS::Region}-${AWS::AccountId}'
+
+  # Lambda Function
+  ForwardHeatmapLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-api'
+      Runtime: python3.13
+      Handler: lambda_function.lambda_handler
+      CodeUri: ./
+      MemorySize: 1024
+      Timeout: 300
+      Role: !GetAtt ForwardHeatmapLambdaRole.Arn
+      Environment:
+        Variables:
+          CONNECT_INSTANCE_ID: !Ref ConnectInstanceId
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+      Events:
+        PostContactSearch:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ForwardHeatmapApi
+            Path: /contact-search
+            Method: POST
+        GetContactSearch:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ForwardHeatmapApi
+            Path: /contact-search
+            Method: GET
+        OptionsContactSearch:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ForwardHeatmapApi
+            Path: /contact-search
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ForwardHeatmapApi
+            Path: /contact-search/status/{queryId}
+            Method: GET
+        OptionsStatus:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ForwardHeatmapApi
+            Path: /contact-search/status/{queryId}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+        GetResults:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ForwardHeatmapApi
+            Path: /contact-search/results/{queryId}
+            Method: GET
+        OptionsResults:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ForwardHeatmapApi
+            Path: /contact-search/results/{queryId}
+            Method: OPTIONS
+            Auth:
+              Authorizer: NONE
+
+  # API Gateway
+  ForwardHeatmapApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-api'
+      StageName: prod
+      Cors:
+        AllowOrigin: !Sub "'${AllowedOrigins}'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowMethods: "'GET,POST,OPTIONS'"
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ForwardHeatmapApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+  
+  LambdaFunctionName:
+    Description: Lambda function name
+    Value: !Ref ForwardHeatmapLambdaFunction
+  
+  LambdaFunctionArn:
+    Description: Lambda function ARN
+    Value: !GetAtt ForwardHeatmapLambdaFunction.Arn
