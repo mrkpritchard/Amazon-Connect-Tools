@@ -1,0 +1,125 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Blocked Numbers Management - Block inbound callers across Connect instances
+
+Parameters:
+  AllowedOrigins:
+    Type: String
+    Description: Allowed CORS origins
+    Default: https://YOUR_CLOUDFRONT_DOMAIN.cloudfront.net
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 30
+    MemorySize: 128
+
+Resources:
+  # ── DynamoDB Table ──
+  BlockedNumbersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: BlockedNumbers
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: Region
+          AttributeType: S
+        - AttributeName: PhoneNumber
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Region
+          KeyType: HASH
+        - AttributeName: PhoneNumber
+          KeyType: RANGE
+
+  # ── API Gateway ──
+  BlockedNumbersApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+  # ── API Lambda (Portal CRUD) ──
+  BlockedNumbersAPIFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: BlockedNumbers-API
+      Handler: index.handler
+      CodeUri: lambda/api/
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref BlockedNumbersTable
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BlockedNumbersTable
+      Events:
+        GetNumbers:
+          Type: Api
+          Properties:
+            Path: /blocked-numbers
+            Method: GET
+            RestApiId: !Ref BlockedNumbersApi
+        AddNumber:
+          Type: Api
+          Properties:
+            Path: /blocked-numbers
+            Method: POST
+            RestApiId: !Ref BlockedNumbersApi
+        DeleteNumber:
+          Type: Api
+          Properties:
+            Path: /blocked-numbers
+            Method: DELETE
+            RestApiId: !Ref BlockedNumbersApi
+        OptionsNumbers:
+          Type: Api
+          Properties:
+            Path: /blocked-numbers
+            Method: OPTIONS
+            RestApiId: !Ref BlockedNumbersApi
+
+  # ── Check Lambda (Connect Flow Integration) ──
+  CheckBlockedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: BlockedNumbers-Check
+      Handler: index.handler
+      CodeUri: lambda/check_blocked/
+      Timeout: 5
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref BlockedNumbersTable
+          TABLE_REGION: !Ref AWS::Region
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref BlockedNumbersTable
+
+  # Allow Connect to invoke the Check Lambda
+  ConnectInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CheckBlockedFunction
+      Action: lambda:InvokeFunction
+      Principal: connect.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+    Value: !Sub https://${BlockedNumbersApi}.execute-api.${AWS::Region}.amazonaws.com/prod
+
+  CheckFunctionArn:
+    Description: Check Lambda ARN (use this in Connect flows)
+    Value: !GetAtt CheckBlockedFunction.Arn
+
+  CheckFunctionName:
+    Description: Check Lambda function name
+    Value: !Ref CheckBlockedFunction
+
+  TableName:
+    Description: DynamoDB table name
+    Value: !Ref BlockedNumbersTable

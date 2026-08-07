@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Blocked Numbers</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header>
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <button class="btn secondary" onclick="window.location.href='/index.html'" title="Back to Portal">← Back</button>
+        <div style="flex-shrink: 0;">
+          <img src="/logo.svg" alt="Logo" style="height: 40px; width: auto; display: block;" onerror="this.style.display='none';">
+        </div>
+        <div>
+          <h1 style="margin:0; font-size:20px; font-weight:600; color:var(--text);">Blocked Numbers</h1>
+        </div>
+      </div>
+      <div>
+        <span id="userEmail" style="display:none;"></span>
+        <button id="themeToggle" class="btn secondary" onclick="toggleTheme()" title="Toggle dark/light mode">
+          <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Auth Required -->
+
+    <!-- No Permission -->
+
+    <!-- Main Content -->
+    <div id="mainContent">
+
+      <!-- Stats -->
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-value" id="statTotal">0</div>
+          <div class="stat-label">Blocked Numbers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statRegion" style="font-size: 20px;">-</div>
+          <div class="stat-label">Current Region</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="card">
+        <div class="toolbar">
+          <div class="field">
+            <label for="regionSelect">Region</label>
+            <select id="regionSelect" onchange="loadNumbers()" style="width: 220px;">
+              <option value="us-east-1">US East (N. Virginia)</option>
+              <option value="eu-central-1">EU (Frankfurt)</option>
+              <option value="ap-northeast-1">Tokyo</option>
+              <option value="ap-southeast-1">Singapore</option>
+              <option value="ALL">Global (All Regions)</option>
+            </select>
+          </div>
+          <div class="field grow">
+            <label for="searchInput">Search</label>
+            <input type="text" id="searchInput" placeholder="Filter by number or description..." oninput="filterTable()">
+          </div>
+          <div class="field" style="align-self: flex-end;">
+            <button class="btn primary" onclick="openAddModal()">+ Add Number</button>
+          </div>
+          <div class="field" style="align-self: flex-end;">
+            <button class="btn secondary" onclick="openBulkModal()">Import Bulk</button>
+          </div>
+          <div class="field" style="align-self: flex-end;">
+            <button class="btn secondary" onclick="exportCSV()">Export CSV</button>
+          </div>
+          <div class="field" style="align-self: flex-end;">
+            <button class="btn" onclick="loadNumbers()" title="Refresh">&#x21bb; Refresh</button>
+          </div>
+        </div>
+
+        <!-- Table -->
+        <div class="table-wrapper">
+          <table class="data-table" id="numbersTable">
+            <thead>
+              <tr>
+                <th style="width: 40px;"><input type="checkbox" id="selectAll" onchange="toggleSelectAll(this)"></th>
+                <th>Phone Number</th>
+                <th>Description</th>
+                <th>Blocked Date</th>
+                <th>Blocked By</th>
+                <th style="width: 100px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="numbersBody">
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Bulk actions -->
+        <div id="bulkActions" style="display: none; margin-top: 16px; display: flex; gap: 12px; align-items: center;">
+          <span class="muted" id="selectedCount">0 selected</span>
+          <button class="btn danger sm" onclick="deleteSelected()">Delete Selected</button>
+        </div>
+
+        <!-- Empty state -->
+        <div id="emptyState" class="empty-state" style="display: none;">
+          <div class="icon">&#128683;</div>
+          <h2>No Blocked Numbers</h2>
+          <p class="muted">No numbers are blocked in this region. Click "Add Number" to block a caller.</p>
+        </div>
+
+        <!-- Loading -->
+        <div id="loadingState" style="text-align: center; padding: 40px; display: none;">
+          <span class="spinner"></span> Loading blocked numbers...
+        </div>
+      </div>
+
+      <!-- Connect Integration Info -->
+      <div class="card" style="border-left: 4px solid var(--accent);">
+        <h2>Connect Flow Integration</h2>
+        <p class="muted" style="margin-bottom: 12px;">
+          To use this in your Connect flows, add an <strong>Invoke AWS Lambda function</strong> block
+          pointing to <code style="background: var(--bg-secondary); padding: 2px 8px; border-radius: 4px;">BlockedNumbers-Check</code>,
+          then check <code style="background: var(--bg-secondary); padding: 2px 8px; border-radius: 4px;">$.External.result</code>.
+        </p>
+        <p class="muted">
+          If <code style="background: var(--bg-secondary); padding: 2px 8px; border-radius: 4px;">result = BLOCKED</code> &rarr; Disconnect or play a message.
+          Otherwise the call continues normally. The Lambda auto-detects the Connect region from the instance ARN.
+        </p>
+        <p class="muted" style="margin-top: 8px;">
+          <strong>Global blocks</strong> (region = "ALL") apply across all Connect instances.
+          Region-specific blocks only apply to calls on that region's instance.
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <!-- Add Number Modal -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal">
+      <h2>Block a Number</h2>
+      <div class="form-group">
+        <label for="addPhone">Phone Number</label>
+        <input type="tel" id="addPhone" placeholder="+81120516824" autocomplete="off">
+        <small class="muted">Include country code with + prefix (e.g. +81, +1, +49)</small>
+      </div>
+      <div class="form-group">
+        <label for="addDescription">Description</label>
+        <input type="text" id="addDescription" placeholder="e.g. Sales spam, Scam caller" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label for="addRegion">Region</label>
+        <select id="addRegion">
+          <option value="us-east-1">US East (N. Virginia)</option>
+          <option value="eu-central-1">EU (Frankfurt)</option>
+          <option value="ap-northeast-1">Tokyo</option>
+          <option value="ap-southeast-1">Singapore</option>
+          <option value="ALL">Global (All Regions)</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button class="btn secondary" onclick="closeModal('addModal')">Cancel</button>
+        <button class="btn primary" onclick="addNumber()" id="addBtn">Block Number</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Import Modal -->
+  <div class="modal-overlay" id="bulkModal">
+    <div class="modal">
+      <h2>Bulk Import</h2>
+      <p class="muted" style="margin-bottom: 16px;">
+        Paste numbers below, one per line. Optionally add a description after a comma or tab.
+      </p>
+      <div class="form-group">
+        <label for="bulkRegion">Region</label>
+        <select id="bulkRegion">
+          <option value="us-east-1">US East (N. Virginia)</option>
+          <option value="eu-central-1">EU (Frankfurt)</option>
+          <option value="ap-northeast-1">Tokyo</option>
+          <option value="ap-southeast-1">Singapore</option>
+          <option value="ALL">Global (All Regions)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="bulkInput">Numbers</label>
+        <textarea id="bulkInput" rows="10" placeholder="+81120516824, Sales spam
++81120926316, Unwanted caller
++1234567890"></textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn secondary" onclick="closeModal('bulkModal')">Cancel</button>
+        <button class="btn primary" onclick="bulkImport()" id="bulkBtn">Import All</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script>
+    // ─── Configuration ───
+    const API_BASE_URL = 'https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod';
+
+    let allNumbers = [];
+    let selectedNumbers = new Set();
+
+    // ─── Auth ───
+    function checkAuth() {
+      // Authentication removed for standalone / public use.
+      // Add your own auth provider here if you need to gate access.
+      var _mc = document.getElementById('mainContent');
+      if (_mc) _mc.style.display = 'block';
+      return true;
+    }
+
+    function getAuthHeaders() {
+      return { 'Content-Type': 'application/json' };
+    }
+
+    // ─── Theme ───
+    function initTheme() {
+      const saved = localStorage.getItem('app_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', saved);
+      updateThemeButton(saved);
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('app_theme', next);
+      updateThemeButton(next);
+    }
+
+    function updateThemeButton(theme) {
+      document.getElementById('themeIcon').innerHTML = theme === 'dark' ? '&#9728;' : '&#127769;';
+      document.getElementById('themeText').textContent = theme === 'dark' ? 'Light' : 'Dark';
+    }
+
+    // ─── Load Numbers ───
+    async function loadNumbers() {
+      const region = document.getElementById('regionSelect').value;
+      document.getElementById('statRegion').textContent = regionLabel(region);
+      document.getElementById('loadingState').style.display = 'block';
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('numbersBody').innerHTML = '';
+      selectedNumbers.clear();
+      updateBulkActions();
+
+      try {
+        const resp = await fetch(`${API_BASE_URL}/blocked-numbers?region=${encodeURIComponent(region)}`, {
+          headers: getAuthHeaders()
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        allNumbers = data.numbers || [];
+        document.getElementById('statTotal').textContent = allNumbers.length;
+        renderNumbers(allNumbers);
+      } catch (e) {
+        console.error('Load error:', e);
+        showToast('Failed to load blocked numbers: ' + e.message, 'error');
+        allNumbers = [];
+      } finally {
+        document.getElementById('loadingState').style.display = 'none';
+      }
+    }
+
+    function renderNumbers(numbers) {
+      const tbody = document.getElementById('numbersBody');
+      tbody.innerHTML = '';
+
+      if (numbers.length === 0) {
+        document.getElementById('emptyState').style.display = 'block';
+        return;
+      }
+      document.getElementById('emptyState').style.display = 'none';
+
+      // Sort by blocked date descending
+      numbers.sort((a, b) => (b.BlockedAt || '').localeCompare(a.BlockedAt || ''));
+
+      numbers.forEach(num => {
+        const tr = document.createElement('tr');
+        const blockedDate = num.BlockedAt ? new Date(num.BlockedAt).toLocaleDateString('en-GB', {
+          year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        }) : '-';
+        const isSelected = selectedNumbers.has(num.PhoneNumber);
+
+        tr.innerHTML = `
+          <td><input type="checkbox" data-phone="${escapeAttr(num.PhoneNumber)}" ${isSelected ? 'checked' : ''} onchange="toggleSelect(this)"></td>
+          <td class="phone-col">${escapeHtml(num.PhoneNumber)}</td>
+          <td>${escapeHtml(num.Description || '-')}</td>
+          <td class="muted">${blockedDate}</td>
+          <td class="muted">${escapeHtml(num.BlockedBy || '-')}</td>
+          <td>
+            <button class="btn danger sm" onclick="deleteNumber('${escapeAttr(num.PhoneNumber)}')" title="Unblock">Unblock</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // ─── Filter ───
+    function filterTable() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allNumbers.filter(n =>
+        (n.PhoneNumber || '').toLowerCase().includes(q) ||
+        (n.Description || '').toLowerCase().includes(q) ||
+        (n.BlockedBy || '').toLowerCase().includes(q)
+      );
+      renderNumbers(filtered);
+    }
+
+    // ─── Add Number ───
+    function openAddModal() {
+      document.getElementById('addPhone').value = '';
+      document.getElementById('addDescription').value = '';
+      document.getElementById('addRegion').value = document.getElementById('regionSelect').value;
+      document.getElementById('addModal').classList.add('active');
+      document.getElementById('addPhone').focus();
+    }
+
+    async function addNumber() {
+      const phone = document.getElementById('addPhone').value.trim();
+      const desc = document.getElementById('addDescription').value.trim();
+      const region = document.getElementById('addRegion').value;
+
+      if (!phone) {
+        showToast('Phone number is required', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('addBtn');
+      btn.disabled = true;
+      btn.textContent = 'Blocking...';
+
+      try {
+        const resp = await fetch(`${API_BASE_URL}/blocked-numbers`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ region, phoneNumber: phone, description: desc })
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        showToast(`${phone} blocked successfully`, 'success');
+        closeModal('addModal');
+        if (region === document.getElementById('regionSelect').value) {
+          loadNumbers();
+        }
+      } catch (e) {
+        showToast('Failed to block number: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Block Number';
+      }
+    }
+
+    // ─── Delete ───
+    async function deleteNumber(phoneNumber) {
+      if (!confirm(`Unblock ${phoneNumber}?`)) return;
+      const region = document.getElementById('regionSelect').value;
+
+      try {
+        const resp = await fetch(`${API_BASE_URL}/blocked-numbers?region=${encodeURIComponent(region)}&phoneNumber=${encodeURIComponent(phoneNumber)}`, {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        showToast(`${phoneNumber} unblocked`, 'success');
+        loadNumbers();
+      } catch (e) {
+        showToast('Failed to unblock: ' + e.message, 'error');
+      }
+    }
+
+    // ─── Selection / Bulk Delete ───
+    function toggleSelect(checkbox) {
+      const phone = checkbox.dataset.phone;
+      if (checkbox.checked) {
+        selectedNumbers.add(phone);
+      } else {
+        selectedNumbers.delete(phone);
+      }
+      updateBulkActions();
+    }
+
+    function toggleSelectAll(checkbox) {
+      const boxes = document.querySelectorAll('#numbersBody input[type="checkbox"]');
+      boxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+        const phone = cb.dataset.phone;
+        if (checkbox.checked) selectedNumbers.add(phone);
+        else selectedNumbers.delete(phone);
+      });
+      updateBulkActions();
+    }
+
+    function updateBulkActions() {
+      const container = document.getElementById('bulkActions');
+      const count = selectedNumbers.size;
+      if (count > 0) {
+        container.style.display = 'flex';
+        document.getElementById('selectedCount').textContent = `${count} selected`;
+      } else {
+        container.style.display = 'none';
+      }
+    }
+
+    async function deleteSelected() {
+      const phones = Array.from(selectedNumbers);
+      if (!confirm(`Unblock ${phones.length} number(s)?`)) return;
+      const region = document.getElementById('regionSelect').value;
+      let ok = 0, fail = 0;
+
+      for (const phone of phones) {
+        try {
+          const resp = await fetch(`${API_BASE_URL}/blocked-numbers?region=${encodeURIComponent(region)}&phoneNumber=${encodeURIComponent(phone)}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+          });
+          if (resp.ok) ok++; else fail++;
+        } catch { fail++; }
+      }
+
+      showToast(`Unblocked ${ok} number(s)${fail ? `, ${fail} failed` : ''}`, fail ? 'error' : 'success');
+      selectedNumbers.clear();
+      loadNumbers();
+    }
+
+    // ─── Bulk Import ───
+    function openBulkModal() {
+      document.getElementById('bulkInput').value = '';
+      document.getElementById('bulkRegion').value = document.getElementById('regionSelect').value;
+      document.getElementById('bulkModal').classList.add('active');
+    }
+
+    async function bulkImport() {
+      const raw = document.getElementById('bulkInput').value.trim();
+      const region = document.getElementById('bulkRegion').value;
+      if (!raw) {
+        showToast('Paste at least one number', 'error');
+        return;
+      }
+
+      const lines = raw.split('\n').filter(l => l.trim());
+      const numbers = lines.map(line => {
+        // Split by comma or tab
+        const parts = line.split(/[,\t]/).map(s => s.trim());
+        return {
+          phoneNumber: parts[0],
+          description: parts[1] || ''
+        };
+      });
+
+      const btn = document.getElementById('bulkBtn');
+      btn.disabled = true;
+      btn.textContent = `Importing ${numbers.length}...`;
+
+      try {
+        const resp = await fetch(`${API_BASE_URL}/blocked-numbers`, {
+          method: 'POST',
+          headers: getAuthHeaders(),
+          body: JSON.stringify({ region, numbers })
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        showToast(data.message || `Imported ${numbers.length} numbers`, 'success');
+        closeModal('bulkModal');
+        if (region === document.getElementById('regionSelect').value) {
+          loadNumbers();
+        }
+      } catch (e) {
+        showToast('Bulk import failed: ' + e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Import All';
+      }
+    }
+
+    // ─── Export CSV ───
+    function exportCSV() {
+      if (allNumbers.length === 0) {
+        showToast('No numbers to export', 'info');
+        return;
+      }
+
+      const header = 'PhoneNumber,Description,BlockedAt,BlockedBy';
+      const rows = allNumbers.map(n =>
+        `"${n.PhoneNumber}","${(n.Description || '').replace(/"/g, '""')}","${n.BlockedAt || ''}","${n.BlockedBy || ''}"`
+      );
+      const csv = header + '\n' + rows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `blocked-numbers-${document.getElementById('regionSelect').value}-${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // ─── Modal Helpers ───
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // Close modal on overlay click
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) overlay.classList.remove('active');
+      });
+    });
+
+    // Close modal on Escape
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+      }
+    });
+
+    // ─── Utilities ───
+    function regionLabel(region) {
+      const labels = {
+        'us-east-1': 'US East',
+        'eu-central-1': 'EU Frankfurt',
+        'ap-northeast-1': 'Tokyo',
+        'ap-southeast-1': 'Singapore',
+        'ALL': 'Global'
+      };
+      return labels[region] || region;
+    }
+
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    function escapeAttr(str) {
+      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast ' + type;
+      toast.textContent = message;
+      container.appendChild(toast);
+      setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 4000);
+    }
+
+    // ─── Init ───
+    initTheme();
+    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+
+    if (true) {
+      loadNumbers();
+    }
+  </script>
+
+</body>
+</html>
