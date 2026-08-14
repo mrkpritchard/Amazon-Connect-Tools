@@ -1,0 +1,196 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Connect Flow Content Search - Search across all Connect contact flows and modules
+
+Parameters:
+  ConnectInstanceIdUS:
+    Type: String
+    Description: Amazon Connect Instance ID (US)
+    Default: 'YOUR_CONNECT_INSTANCE_ID'
+
+  ConnectInstanceIdEU:
+    Type: String
+    Description: Amazon Connect Instance ID (EU)
+    Default: 'YOUR_CONNECT_INSTANCE_ID'
+
+  ConnectInstanceIdJP:
+    Type: String
+    Description: Amazon Connect Instance ID (Tokyo)
+    Default: 'YOUR_CONNECT_INSTANCE_ID'
+
+  ConnectInstanceIdSG:
+    Type: String
+    Description: Amazon Connect Instance ID (Singapore)
+    Default: 'YOUR_CONNECT_INSTANCE_ID'
+
+  ConnectInstanceIdDev:
+    Type: String
+    Description: Amazon Connect Instance ID (Dev)
+    Default: 'YOUR_CONNECT_INSTANCE_ID'
+
+  AllowedOrigins:
+    Type: String
+    Description: Allowed CORS origins
+    Default: https://YOUR_CLOUDFRONT_DOMAIN.cloudfront.net
+
+Resources:
+  # IAM Role
+  FlowSearchLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-Lambda-Role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ConnectFlowReadAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - connect:ListContactFlows
+                  - connect:DescribeContactFlow
+                  - connect:ListContactFlowModules
+                  - connect:DescribeContactFlowModule
+                Resource:
+                  - !Sub 'arn:aws:connect:us-east-1:${AWS::AccountId}:instance/${ConnectInstanceIdUS}'
+                  - !Sub 'arn:aws:connect:us-east-1:${AWS::AccountId}:instance/${ConnectInstanceIdUS}/*'
+                  - !Sub 'arn:aws:connect:eu-central-1:${AWS::AccountId}:instance/${ConnectInstanceIdEU}'
+                  - !Sub 'arn:aws:connect:eu-central-1:${AWS::AccountId}:instance/${ConnectInstanceIdEU}/*'
+                  - !Sub 'arn:aws:connect:ap-northeast-1:${AWS::AccountId}:instance/${ConnectInstanceIdJP}'
+                  - !Sub 'arn:aws:connect:ap-northeast-1:${AWS::AccountId}:instance/${ConnectInstanceIdJP}/*'
+                  - !Sub 'arn:aws:connect:ap-southeast-1:${AWS::AccountId}:instance/${ConnectInstanceIdSG}'
+                  - !Sub 'arn:aws:connect:ap-southeast-1:${AWS::AccountId}:instance/${ConnectInstanceIdSG}/*'
+                  - !Sub 'arn:aws:connect:eu-central-1:${AWS::AccountId}:instance/${ConnectInstanceIdDev}'
+                  - !Sub 'arn:aws:connect:eu-central-1:${AWS::AccountId}:instance/${ConnectInstanceIdDev}/*'
+        - PolicyName: DynamoDBAccess
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:Scan
+                  - dynamodb:BatchWriteItem
+                Resource: !GetAtt FlowSearchTable.Arn
+
+  # DynamoDB Table
+  FlowSearchTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: FlowSearchIndex
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: Region
+          AttributeType: S
+        - AttributeName: FlowId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: Region
+          KeyType: HASH
+        - AttributeName: FlowId
+          KeyType: RANGE
+
+  # Lambda Function
+  FlowSearchFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-api'
+      Runtime: python3.13
+      Handler: lambda_function.handler
+      CodeUri: ./
+      MemorySize: 512
+      Timeout: 600
+      Role: !GetAtt FlowSearchLambdaRole.Arn
+      Environment:
+        Variables:
+          FLOW_INDEX_TABLE: !Ref FlowSearchTable
+          AWS_ACCOUNT_ID: !Ref AWS::AccountId
+          CONNECT_INSTANCE_ID_US: !Ref ConnectInstanceIdUS
+          CONNECT_INSTANCE_ID_EU: !Ref ConnectInstanceIdEU
+          CONNECT_INSTANCE_ID_JP: !Ref ConnectInstanceIdJP
+          CONNECT_INSTANCE_ID_SG: !Ref ConnectInstanceIdSG
+          CONNECT_INSTANCE_ID_DEV: !Ref ConnectInstanceIdDev
+      Events:
+        Index:
+          Type: Api
+          Properties:
+            Path: /flow-search/index
+            Method: POST
+            RestApiId: !Ref FlowSearchApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+        Search:
+          Type: Api
+          Properties:
+            Path: /flow-search/search
+            Method: GET
+            RestApiId: !Ref FlowSearchApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+        Status:
+          Type: Api
+          Properties:
+            Path: /flow-search/status
+            Method: GET
+            RestApiId: !Ref FlowSearchApi
+            Auth:
+              Authorizer: CognitoAuthorizer
+        OptionsIndex:
+          Type: Api
+          Properties:
+            Path: /flow-search/index
+            Method: OPTIONS
+            RestApiId: !Ref FlowSearchApi
+        OptionsSearch:
+          Type: Api
+          Properties:
+            Path: /flow-search/search
+            Method: OPTIONS
+            RestApiId: !Ref FlowSearchApi
+        OptionsStatus:
+          Type: Api
+          Properties:
+            Path: /flow-search/status
+            Method: OPTIONS
+            RestApiId: !Ref FlowSearchApi
+
+  # API Gateway
+  FlowSearchApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-API'
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: !Sub "'${AllowedOrigins}'"
+        MaxAge: "'600'"
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${FlowSearchApi}.execute-api.${AWS::Region}.amazonaws.com/prod/flow-search'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiUrl'
+
+  FunctionName:
+    Description: Lambda Function Name
+    Value: !Ref FlowSearchFunction
+
+  ApiId:
+    Description: API Gateway ID
+    Value: !Ref FlowSearchApi
+
+  TableName:
+    Description: DynamoDB Table Name
+    Value: !Ref FlowSearchTable

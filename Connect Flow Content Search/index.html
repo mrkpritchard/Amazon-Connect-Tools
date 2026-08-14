@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Connect Flow Content Search</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <button class="btn secondary" onclick="window.location.href='/index.html'" title="Back to Portal">← Back</button>
+        <div style="flex-shrink: 0;">
+          <img src="/logo.svg" alt="Logo" style="height: 40px; width: auto; display: block;" onerror="this.style.display='none';">
+        </div>
+        <div>
+          <h1 style="margin:0; font-size:20px; font-weight:600; color:var(--text);">Connect Flow Content Search</h1>
+        </div>
+      </div>
+      <div>
+        <button id="themeToggle" class="btn secondary" onclick="toggleTheme()" title="Toggle dark/light mode">
+          <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Access Denied -->
+
+    <!-- No Permission -->
+
+    <!-- Main Content -->
+    <div id="mainContent">
+
+      <!-- Search Section -->
+      <section class="card">
+        <h2>Search Flow Content</h2>
+        <p class="muted" style="margin-bottom: 20px;">Search for queue names, Lambda ARNs, phone numbers, or any text across all indexed contact flows and modules.</p>
+
+        <div class="search-bar">
+          <div style="flex: 0 0 180px;">
+            <label for="searchRegion">Region</label>
+            <select id="searchRegion" style="width: 100%;">
+              <option value="all">All Regions</option>
+              <option value="us-east-1">US (N. Virginia)</option>
+              <option value="eu-central-1">EU (Frankfurt)</option>
+              <option value="ap-northeast-1">JP (Tokyo)</option>
+              <option value="ap-southeast-2">AU (Sydney)</option>
+              <option value="eu-central-1-dev">Dev</option>
+            </select>
+          </div>
+          <div style="flex: 1; min-width: 250px;">
+            <label for="searchInput">Search Query</label>
+            <input type="text" id="searchInput" placeholder="e.g. queue name, Lambda ARN, phone number..." style="width: 100%;">
+          </div>
+          <button id="searchBtn" class="btn primary" onclick="doSearch()" style="height: 42px;">
+            &#128269; Search
+          </button>
+        </div>
+      </section>
+
+      <!-- Index Status -->
+      <section class="card">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
+          <h2 style="margin: 0;">Index Status</h2>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <select id="indexRegion" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text); font-size: 13px;">
+              <option value="all">All Regions</option>
+              <option value="us-east-1">US (N. Virginia)</option>
+              <option value="eu-central-1">EU (Frankfurt)</option>
+              <option value="ap-northeast-1">JP (Tokyo)</option>
+              <option value="ap-southeast-2">AU (Sydney)</option>
+              <option value="eu-central-1-dev">Dev</option>
+            </select>
+            <button id="indexBtn" class="btn primary" onclick="doIndex()" style="padding: 8px 16px; font-size: 13px;">
+              &#x21BB; Index Flows
+            </button>
+          </div>
+        </div>
+        <div id="indexProgress" style="display: none;">
+          <p class="muted" id="indexProgressText">Indexing flows...</p>
+          <div class="progress-bar"><div class="progress-fill" id="indexProgressFill" style="width: 0%"></div></div>
+        </div>
+        <div id="statusGrid" class="status-grid">
+          <div class="status-item not-indexed">
+            <div class="status-label">Loading...</div>
+            <div class="status-value">-</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Search Results -->
+      <section id="resultsSection" style="display: none;">
+        <div class="results-summary">
+          <span class="results-count" id="resultsCount">0 results</span>
+          <span class="muted" id="resultsQuery"></span>
+        </div>
+        <div id="resultsContainer"></div>
+      </section>
+
+      <!-- Loading State -->
+      <section id="searchLoading" class="card" style="display: none; text-align: center; padding: 60px;">
+        <div class="loading-spinner">&#9679;</div>
+        <p class="muted" style="margin-top: 16px;">Searching flows...</p>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    // ─── Configuration ───────────────────────────────────────────────────────────
+    // UPDATE THIS URL after deploying the SAM stack
+    const API_BASE_URL = 'https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod/flow-search';
+
+    const REGION_BADGES = {
+      'us-east-1': { label: 'US', css: 'region-us' },
+      'eu-central-1': { label: 'EU', css: 'region-eu' },
+      'ap-northeast-1': { label: 'Tokyo', css: 'region-jp' },
+      'ap-southeast-1': { label: 'Singapore', css: 'region-sg' },
+      'eu-central-1-dev': { label: 'Dev', css: 'region-dev' }
+    };
+
+    const FLOW_TYPE_LABELS = {
+      'CONTACT_FLOW': 'Contact Flow',
+      'CUSTOMER_QUEUE': 'Customer Queue',
+      'CUSTOMER_HOLD': 'Customer Hold',
+      'CUSTOMER_WHISPER': 'Customer Whisper',
+      'AGENT_HOLD': 'Agent Hold',
+      'AGENT_WHISPER': 'Agent Whisper',
+      'OUTBOUND_WHISPER': 'Outbound Whisper',
+      'AGENT_TRANSFER': 'Agent Transfer',
+      'QUEUE_TRANSFER': 'Queue Transfer',
+      'MODULE': 'Flow Module'
+    };
+
+    let idToken = null;
+
+    // ─── Auth ────────────────────────────────────────────────────────────────────
+    function initAuth() {
+      // Authentication removed for standalone / public use.
+      // Add your own auth provider here if you need to gate access.
+      var _mc = document.getElementById('mainContent');
+      if (_mc) _mc.style.display = 'block';
+      return true;
+    }
+
+    // ─── Theme ───────────────────────────────────────────────────────────────────
+    function initTheme() {
+      const saved = localStorage.getItem('app_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      updateThemeButton(saved);
+
+      document.getElementById('themeToggle').addEventListener('click', () => {
+        const current = document.documentElement.getAttribute('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('app_theme', next);
+        updateThemeButton(next);
+      });
+    }
+
+    function updateThemeButton(theme) {
+      document.getElementById('themeIcon').textContent = theme === 'dark' ? '\u2600\uFE0F' : '\uD83C\uDF19';
+      document.getElementById('themeText').textContent = theme === 'dark' ? 'Light' : 'Dark';
+    }
+
+    // ─── API Helpers ─────────────────────────────────────────────────────────────
+    async function apiFetch(path, options = {}) {
+      const url = API_BASE_URL + path;
+      const resp = await fetch(url, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers || {})
+        }
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(`API error ${resp.status}: ${text}`);
+      }
+      return resp.json();
+    }
+
+    // ─── Index ───────────────────────────────────────────────────────────────────
+    async function doIndex() {
+      const region = document.getElementById('indexRegion').value;
+      const btn = document.getElementById('indexBtn');
+      const progress = document.getElementById('indexProgress');
+      const progressText = document.getElementById('indexProgressText');
+      const progressFill = document.getElementById('indexProgressFill');
+
+      btn.disabled = true;
+      progress.style.display = 'block';
+
+      if (region === 'all') {
+        const regions = ['us-east-1', 'eu-central-1', 'ap-northeast-1', 'ap-southeast-2', 'eu-central-1-dev'];
+        for (let i = 0; i < regions.length; i++) {
+          const r = regions[i];
+          const label = REGION_BADGES[r]?.label || r;
+          progressText.textContent = `Indexing ${label} (${i + 1}/${regions.length})...`;
+          progressFill.style.width = ((i / regions.length) * 100) + '%';
+          try {
+            await apiFetch('/index', {
+              method: 'POST',
+              body: JSON.stringify({ region: r })
+            });
+          } catch (e) {
+            progressText.textContent = `Error indexing ${label}: ${e.message}`;
+          }
+        }
+        progressFill.style.width = '100%';
+        progressText.textContent = 'Indexing complete!';
+      } else {
+        const label = REGION_BADGES[region]?.label || region;
+        progressText.textContent = `Indexing ${label}...`;
+        progressFill.style.width = '50%';
+        try {
+          await apiFetch('/index', {
+            method: 'POST',
+            body: JSON.stringify({ region })
+          });
+          progressFill.style.width = '100%';
+          progressText.textContent = 'Indexing complete!';
+        } catch (e) {
+          progressText.textContent = `Error: ${e.message}`;
+        }
+      }
+
+      btn.disabled = false;
+      setTimeout(() => { progress.style.display = 'none'; }, 3000);
+      loadStatus();
+    }
+
+    // ─── Status ──────────────────────────────────────────────────────────────────
+    async function loadStatus() {
+      const grid = document.getElementById('statusGrid');
+      try {
+        const data = await apiFetch('/status');
+        const regions = data.regions || {};
+
+        let html = '';
+        for (const [reg, info] of Object.entries(regions)) {
+          const badge = REGION_BADGES[reg] || { label: reg, css: 'region-dev' };
+          const indexed = info.total > 0;
+          const lastTime = info.lastIndexed ? new Date(info.lastIndexed).toLocaleString() : 'Never';
+
+          html += `
+            <div class="status-item ${indexed ? '' : 'not-indexed'}">
+              <div class="status-label"><span class="badge ${badge.css}">${badge.label}</span></div>
+              <div class="status-value">${info.total}</div>
+              <div class="status-meta">${info.flows} flows, ${info.modules} modules</div>
+              <div class="status-meta">${indexed ? 'Indexed: ' + lastTime : 'Not indexed'}</div>
+            </div>
+          `;
+        }
+        grid.innerHTML = html || '<div class="status-item not-indexed"><div class="status-label">No data</div><div class="status-value">-</div></div>';
+      } catch (e) {
+        grid.innerHTML = `<div class="status-item"><div class="status-label">Error</div><div class="status-meta">${escapeHtml(e.message)}</div></div>`;
+      }
+    }
+
+    // ─── Search ──────────────────────────────────────────────────────────────────
+    async function doSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query || query.length < 2) {
+        alert('Please enter at least 2 characters to search.');
+        return;
+      }
+
+      const region = document.getElementById('searchRegion').value;
+      const loading = document.getElementById('searchLoading');
+      const resultsSection = document.getElementById('resultsSection');
+      const resultsContainer = document.getElementById('resultsContainer');
+
+      loading.style.display = 'block';
+      resultsSection.style.display = 'none';
+
+      try {
+        const params = new URLSearchParams({ q: query, region });
+        const data = await apiFetch('/search?' + params.toString());
+
+        loading.style.display = 'none';
+        resultsSection.style.display = 'block';
+
+        const results = data.results || [];
+        document.getElementById('resultsCount').textContent = `${results.length} flow${results.length !== 1 ? 's' : ''} matched`;
+        document.getElementById('resultsQuery').textContent = `for "${data.query}" ${region !== 'all' ? 'in ' + (REGION_BADGES[region]?.label || region) : 'across all regions'}`;
+
+        if (results.length === 0) {
+          resultsContainer.innerHTML = `
+            <div class="no-results">
+              <div class="no-results-icon">&#128269;</div>
+              <h2>No matches found</h2>
+              <p class="muted">Try a different search term or index flows first.</p>
+            </div>
+          `;
+          return;
+        }
+
+        let html = '';
+        for (const r of results) {
+          const regionBadge = REGION_BADGES[r.region] || { label: r.region, css: 'region-dev' };
+          const typeBadge = r.itemType === 'FLOW_MODULE' ? 'module' : 'flow';
+          const typeLabel = FLOW_TYPE_LABELS[r.flowType] || r.flowType;
+
+          let matchesHtml = '';
+          for (const m of (r.matches || []).slice(0, 10)) {
+            const snippet = highlightMatch(escapeHtml(m.snippet), query);
+            matchesHtml += `
+              <li class="match-item">
+                <span class="match-block-name">${escapeHtml(m.blockName)}</span>
+                <span class="match-block-type">[${escapeHtml(m.blockType)}]</span>
+                <br><span class="match-snippet">${snippet}</span>
+              </li>
+            `;
+          }
+          if (r.matches && r.matches.length > 10) {
+            matchesHtml += `<li class="match-item"><span class="muted">... and ${r.matches.length - 10} more matches</span></li>`;
+          }
+
+          html += `
+            <div class="result-card">
+              <div class="result-header">
+                <span class="result-name">${escapeHtml(r.flowName)}</span>
+                <span class="badge ${typeBadge}">${typeLabel}</span>
+                <span class="badge ${regionBadge.css}">${regionBadge.label}</span>
+                <span class="badge match-count">${r.matchCount} match${r.matchCount !== 1 ? 'es' : ''}</span>
+              </div>
+              <ul class="match-list">${matchesHtml}</ul>
+            </div>
+          `;
+        }
+        resultsContainer.innerHTML = html;
+      } catch (e) {
+        loading.style.display = 'none';
+        resultsSection.style.display = 'block';
+        resultsContainer.innerHTML = `<div class="card" style="color: var(--danger);"><strong>Error:</strong> ${escapeHtml(e.message)}</div>`;
+      }
+    }
+
+    // ─── Utilities ───────────────────────────────────────────────────────────────
+    function escapeHtml(str) {
+      if (!str) return '';
+      const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+      return String(str).replace(/[&<>"']/g, c => map[c]);
+    }
+
+    function highlightMatch(escapedHtml, query) {
+      if (!query) return escapedHtml;
+      const escapedQuery = escapeHtml(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp('(' + escapedQuery + ')', 'gi');
+      return escapedHtml.replace(re, '<mark>$1</mark>');
+    }
+
+    // ─── Keyboard Shortcut ───────────────────────────────────────────────────────
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && document.activeElement?.id === 'searchInput') {
+        doSearch();
+      }
+    });
+
+    // ─── Init ────────────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      if (true) {
+        loadStatus();
+      }
+    });
+  </script>
+</body>
+</html>
