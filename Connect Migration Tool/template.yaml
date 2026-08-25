@@ -1,0 +1,275 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Connect Migration Tool - Discover and replicate Connect resources between instances
+
+Parameters:
+  AllowedOrigins:
+    Type: String
+    Description: Allowed CORS origins
+    Default: https://YOUR_CLOUDFRONT_DOMAIN.cloudfront.net
+
+Globals:
+  Function:
+    Runtime: python3.13
+    Timeout: 120
+    MemorySize: 256
+
+Resources:
+  # ── DynamoDB Audit Log Table ──
+  MigrationAuditLog:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MigrationAuditLog
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: logId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: logId
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # ── DynamoDB Flow Validation Results Table ──
+  FlowValidationResults:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: FlowValidationResults
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: validationKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: validationKey
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # ── DynamoDB Migration Report Table ──
+  MigrationReport:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: MigrationReport
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: resultId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: resultId
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  # ── API Gateway ──
+  MigrationApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,Authorization'"
+        AllowOrigin: "'*'"
+
+  # ── Lambda Function ──
+  MigrationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ConnectMigration-API
+      Handler: index.handler
+      CodeUri: lambda/
+      Environment:
+        Variables:
+          ALLOWED_ORIGINS: !Ref AllowedOrigins
+          AUDIT_TABLE_NAME: !Ref MigrationAuditLog
+          REPORT_TABLE_NAME: !Ref MigrationReport
+          VALIDATION_TABLE_NAME: !Ref FlowValidationResults
+      Policies:
+        # Connect permissions for discovery and creation across all regions
+        - Statement:
+            - Effect: Allow
+              Action:
+                - connect:DescribeInstance
+                - connect:ListHoursOfOperations
+                - connect:DescribeHoursOfOperation
+                - connect:CreateHoursOfOperation
+                - connect:ListQueues
+                - connect:DescribeQueue
+                - connect:CreateQueue
+                - connect:ListSecurityProfiles
+                - connect:DescribeSecurityProfile
+                - connect:ListSecurityProfilePermissions
+                - connect:CreateSecurityProfile
+                - connect:ListRoutingProfiles
+                - connect:DescribeRoutingProfile
+                - connect:ListRoutingProfileQueues
+                - connect:CreateRoutingProfile
+                - connect:ListContactFlows
+                - connect:DescribeContactFlow
+                - connect:CreateContactFlow
+                - connect:ListQuickConnects
+                - connect:DescribeQuickConnect
+                - connect:CreateQuickConnect
+                - connect:UpdateContactFlowContent
+                - connect:ListUsers
+                - connect:DescribeUser
+                - connect:CreateUser
+                - connect:ListPredefinedAttributes
+                - connect:DescribePredefinedAttribute
+                - connect:CreatePredefinedAttribute
+                - connect:ListUserProficiencies
+                - connect:AssociateUserProficiencies
+              Resource: "*"
+        # STS for cross-account role assumption
+        - Statement:
+            - Effect: Allow
+              Action:
+                - sts:AssumeRole
+              Resource: "*"
+        # Lambda function lookup for flow validation
+        - Statement:
+            - Effect: Allow
+              Action:
+                - lambda:GetFunctionConfiguration
+              Resource: "*"
+        # DynamoDB for audit logging and report persistence
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:Scan
+              Resource: !GetAtt MigrationAuditLog.Arn
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:BatchWriteItem
+                - dynamodb:Scan
+                - dynamodb:DeleteItem
+              Resource: !GetAtt MigrationReport.Arn
+        - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:Scan
+                - dynamodb:DeleteItem
+              Resource: !GetAtt FlowValidationResults.Arn
+      Events:
+        TestConnection:
+          Type: Api
+          Properties:
+            Path: /migrate/test-connection
+            Method: POST
+            RestApiId: !Ref MigrationApi
+        Discover:
+          Type: Api
+          Properties:
+            Path: /migrate/discover
+            Method: POST
+            RestApiId: !Ref MigrationApi
+        DiscoverTarget:
+          Type: Api
+          Properties:
+            Path: /migrate/discover-target
+            Method: POST
+            RestApiId: !Ref MigrationApi
+        Replicate:
+          Type: Api
+          Properties:
+            Path: /migrate/replicate
+            Method: POST
+            RestApiId: !Ref MigrationApi
+        OptionsTestConnection:
+          Type: Api
+          Properties:
+            Path: /migrate/test-connection
+            Method: OPTIONS
+            RestApiId: !Ref MigrationApi
+        OptionsDiscover:
+          Type: Api
+          Properties:
+            Path: /migrate/discover
+            Method: OPTIONS
+            RestApiId: !Ref MigrationApi
+        OptionsDiscoverTarget:
+          Type: Api
+          Properties:
+            Path: /migrate/discover-target
+            Method: OPTIONS
+            RestApiId: !Ref MigrationApi
+        OptionsReplicate:
+          Type: Api
+          Properties:
+            Path: /migrate/replicate
+            Method: OPTIONS
+            RestApiId: !Ref MigrationApi
+        GetAuditLog:
+          Type: Api
+          Properties:
+            Path: /migrate/audit-log
+            Method: GET
+            RestApiId: !Ref MigrationApi
+        OptionsAuditLog:
+          Type: Api
+          Properties:
+            Path: /migrate/audit-log
+            Method: OPTIONS
+            RestApiId: !Ref MigrationApi
+        GetReport:
+          Type: Api
+          Properties:
+            Path: /migrate/report
+            Method: GET
+            RestApiId: !Ref MigrationApi
+        DeleteReport:
+          Type: Api
+          Properties:
+            Path: /migrate/report
+            Method: DELETE
+            RestApiId: !Ref MigrationApi
+        OptionsReport:
+          Type: Api
+          Properties:
+            Path: /migrate/report
+            Method: OPTIONS
+            RestApiId: !Ref MigrationApi
+        ValidateFlow:
+          Type: Api
+          Properties:
+            Path: /migrate/validate-flow
+            Method: POST
+            RestApiId: !Ref MigrationApi
+        OptionsValidateFlow:
+          Type: Api
+          Properties:
+            Path: /migrate/validate-flow
+            Method: OPTIONS
+            RestApiId: !Ref MigrationApi
+        GetValidationResults:
+          Type: Api
+          Properties:
+            Path: /migrate/validation-results
+            Method: GET
+            RestApiId: !Ref MigrationApi
+        DeleteValidationResult:
+          Type: Api
+          Properties:
+            Path: /migrate/validation-results
+            Method: POST
+            RestApiId: !Ref MigrationApi
+        OptionsValidationResults:
+          Type: Api
+          Properties:
+            Path: /migrate/validation-results
+            Method: OPTIONS
+            RestApiId: !Ref MigrationApi
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+    Value: !Sub "https://${MigrationApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+  FunctionArn:
+    Description: Lambda Function ARN
+    Value: !GetAtt MigrationFunction.Arn

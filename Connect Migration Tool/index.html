@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Connect Migration Tool</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header>
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <button class="btn secondary" onclick="window.location.href='/index.html'" title="Back to Portal">← Back</button>
+        <div style="flex-shrink: 0;">
+          <img src="/logo.svg" alt="Logo" style="height: 40px; width: auto; display: block;" onerror="this.style.display='none';">
+        </div>
+        <div>
+          <h1 style="margin:0; font-size:20px; font-weight:600; color:var(--text);">Connect Migration Tool</h1>
+        </div>
+      </div>
+      <div>
+        <span id="userEmail" style="display:none;"></span>
+        <button id="themeToggle" class="btn secondary" onclick="toggleTheme()" title="Toggle dark/light mode">
+          <span id="themeIcon">🌙</span> <span id="themeText">Dark</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Auth Required -->
+
+    <!-- Main Content -->
+    <div id="mainContent">
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('config')">&#9881; Configuration</button>
+        <button class="tab" onclick="switchTab('discover')">&#128270; Discover &amp; Select</button>
+        <button class="tab" onclick="switchTab('migrate')">&#128640; Migrate <span class="tab-badge" id="selectedBadge" style="display: none;">0</span></button>
+        <button class="tab" onclick="switchTab('report')">&#128202; Report</button>
+        <button class="tab" onclick="switchTab('validate')">&#128736; Validate Flows</button>
+      </div>
+
+      <!-- ═══ TAB: Configuration ═══ -->
+      <div id="tab-config" class="tab-content active">
+        <div class="connection-panels">
+          <!-- Source Instance -->
+          <div class="connection-panel source">
+            <h2 style="color: var(--info);">&#128230; Source Instance</h2>
+            <p class="muted" style="margin-bottom: 16px;">The Connect instance to copy resources FROM</p>
+
+            <div class="form-group">
+              <label for="sourcePreset">Quick Fill</label>
+              <select id="sourcePreset" onchange="applyPreset('source', this.value); this.value = ''">
+                <option value="">— Select a known instance —</option>
+                <option value="us">US East (N. Virginia)</option>
+                <option value="eu">EU (Frankfurt)</option>
+                <option value="tokyo">Tokyo</option>
+                <option value="singapore">Singapore</option>
+                <option value="dev">DEV (eu-central-1)</option>
+                <option value="eu_old">EU OLD (Frankfurt) ⚠️ Cross-Account</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="sourceRegion">Region</label>
+              <select id="sourceRegion">
+                <option value="us-east-1">US East (N. Virginia)</option>
+                <option value="eu-central-1">EU (Frankfurt)</option>
+                <option value="ap-northeast-1">Tokyo</option>
+                <option value="ap-southeast-1">Singapore</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="sourceInstanceId">Instance ID</label>
+              <input type="text" id="sourceInstanceId" placeholder="e.g. YOUR_CONNECT_INSTANCE_ID">
+            </div>
+
+            <div class="form-group">
+              <label for="sourceRoleArn">Cross-Account Role ARN <span class="muted">(optional)</span></label>
+              <input type="text" id="sourceRoleArn" placeholder="arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/ConnectMigrationRole">
+              <small class="muted">Required if source is in a different AWS account</small>
+            </div>
+
+            <button class="btn primary" onclick="testConnection('source')" id="testSourceBtn">Test Connection</button>
+            <div id="sourceStatus" style="margin-top: 12px;"></div>
+          </div>
+
+          <!-- Arrow -->
+          <div class="connection-arrow">&#10132;</div>
+
+          <!-- Target Instance -->
+          <div class="connection-panel target">
+            <h2 style="color: var(--success);">&#127919; Target Instance</h2>
+            <p class="muted" style="margin-bottom: 16px;">The Connect instance to copy resources TO</p>
+
+            <div class="form-group">
+              <label for="targetPreset">Quick Fill</label>
+              <select id="targetPreset" onchange="applyPreset('target', this.value); this.value = ''">
+                <option value="">— Select a known instance —</option>
+                <option value="us">US East (N. Virginia)</option>
+                <option value="eu">EU (Frankfurt)</option>
+                <option value="tokyo">Tokyo</option>
+                <option value="singapore">Singapore</option>
+                <option value="dev">DEV (eu-central-1)</option>
+                <option value="eu_old">EU OLD (Frankfurt) ⚠️ Cross-Account</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="targetRegion">Region</label>
+              <select id="targetRegion">
+                <option value="us-east-1">US East (N. Virginia)</option>
+                <option value="eu-central-1">EU (Frankfurt)</option>
+                <option value="ap-northeast-1">Tokyo</option>
+                <option value="ap-southeast-1">Singapore</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="targetInstanceId">Instance ID</label>
+              <input type="text" id="targetInstanceId" placeholder="e.g. YOUR_CONNECT_INSTANCE_ID">
+            </div>
+
+            <div class="form-group">
+              <label for="targetRoleArn">Cross-Account Role ARN <span class="muted">(optional)</span></label>
+              <input type="text" id="targetRoleArn" placeholder="arn:aws:iam::YOUR_AWS_ACCOUNT_ID:role/ConnectMigrationRole">
+              <small class="muted">Required if target is in a different AWS account</small>
+            </div>
+
+            <button class="btn success" onclick="testConnection('target')" id="testTargetBtn">Test Connection</button>
+            <div id="targetStatus" style="margin-top: 12px;"></div>
+          </div>
+        </div>
+
+        <!-- Dependency Order Info -->
+        <div class="card" style="border-left: 4px solid var(--info); margin-top: 20px;">
+          <h2>&#128218; Migration Dependency Order</h2>
+          <p class="muted" style="margin-bottom: 16px;">Resources must be migrated in this order due to dependencies. The tool enforces this automatically.</p>
+          <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+            <div><span class="dep-order">1</span>Hours of Operations</div>
+            <div><span class="dep-order">2</span>Security Profiles</div>
+            <div><span class="dep-order">3</span>Queues</div>
+            <div><span class="dep-order">4</span>Contact Flows</div>
+            <div><span class="dep-order">5</span>Routing Profiles</div>
+            <div><span class="dep-order">6</span>Quick Connects</div>
+            <div><span class="dep-order">7</span>Predefined Attributes</div>
+            <div><span class="dep-order">8</span>User Proficiencies</div>
+          </div>
+          <p class="muted" style="margin-top: 12px;">
+            <strong>Note:</strong> Phone numbers, outbound caller IDs, Lambda function references in flows, and Lex bot integrations
+            cannot be migrated automatically. These must be configured manually on the target instance.
+          </p>
+        </div>
+
+        <!-- Cross-Account Role Setup Guide -->
+        <div class="card" style="border-left: 4px solid var(--warning); margin-top: 20px;">
+          <details>
+            <summary style="cursor: pointer; user-select: none; display: flex; align-items: center; gap: 12px; list-style: none; padding-bottom: 4px;">
+              <span style="font-size: 22px;">&#128273;</span>
+              <h2 style="margin: 0; flex: 1;">Cross-Account Role Setup Guide</h2>
+              <span class="muted" style="font-size: 13px; font-weight: normal; white-space: nowrap;">&#9660; Expand</span>
+            </summary>
+
+            <div style="margin-top: 20px;">
+              <p class="muted" style="margin-bottom: 20px; font-size: 14px;">
+                If the source or target Connect instance is in a <strong>different AWS account</strong>, you must create an IAM role
+                in that account and paste its ARN into the <em>Cross-Account Role ARN</em> field above.
+                Same-account migrations do not require this step.
+              </p>
+
+              <div style="display: grid; gap: 16px;">
+
+                <!-- Step 1 -->
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px;">
+                  <h3 style="margin: 0 0 10px 0; color: var(--info); font-size: 15px;">Step 1 &mdash; Find the Lambda Execution Role ARN</h3>
+                  <p style="margin: 0 0 10px 0; font-size: 14px;">You need the ARN of this tool's Lambda execution role to place in the trust policy.</p>
+                  <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 2;">
+                    <li>Open <strong>AWS CloudFormation</strong> in account <code>YOUR_AWS_ACCOUNT_ID</code> (us-east-1)</li>
+                    <li>Find stack <code>ConnectMigration-API</code> &rarr; <strong>Resources</strong> tab</li>
+                    <li>Copy the Physical ID (ARN) of <code>MigrationFunctionRole</code></li>
+                  </ol>
+                </div>
+
+                <!-- Step 2 -->
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px;">
+                  <h3 style="margin: 0 0 10px 0; color: var(--info); font-size: 15px;">Step 2 &mdash; Create IAM Role in the Cross-Account</h3>
+                  <p style="margin: 0 0 14px 0; font-size: 14px;">
+                    In the <strong>other AWS account</strong>, go to <strong>IAM &rarr; Roles &rarr; Create Role</strong>,
+                    select <em>Another AWS account</em>, and enter account ID <code>YOUR_AWS_ACCOUNT_ID</code>.
+                    Then switch to <strong>Custom trust policy</strong> and paste:
+                  </p>
+
+                  <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Trust Policy</p>
+                  <pre style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 12px; overflow-x: auto; margin: 0 0 16px 0; white-space: pre;">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "&lt;MigrationFunctionRole ARN from Step 1&gt;"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}</pre>
+
+                  <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 600; color: var(--text-secondary);">Permissions Policy (attach as inline policy)</p>
+                  <pre style="background: var(--bg-primary); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-size: 12px; overflow-x: auto; margin: 0; white-space: pre;">{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "connect:ListInstances",
+        "connect:DescribeInstance",
+        "connect:ListQueues",
+        "connect:CreateQueue",
+        "connect:ListContactFlows",
+        "connect:DescribeContactFlow",
+        "connect:CreateContactFlow",
+        "connect:ListRoutingProfiles",
+        "connect:DescribeRoutingProfile",
+        "connect:CreateRoutingProfile",
+        "connect:ListSecurityProfiles",
+        "connect:CreateSecurityProfile",
+        "connect:ListHoursOfOperations",
+        "connect:CreateHoursOfOperation",
+        "connect:ListUsers",
+        "connect:CreateUser",
+        "connect:ListQuickConnects",
+        "connect:CreateQuickConnect",
+        "connect:ListPredefinedAttributes",
+        "connect:DescribePredefinedAttribute",
+        "connect:CreatePredefinedAttribute",
+        "connect:ListUserProficiencies",
+        "connect:AssociateUserProficiencies"
+      ],
+      "Resource": "*"
+    }
+  ]
+}</pre>
+                </div>
+
+                <!-- Step 3 -->
+                <div style="background: var(--bg-secondary); border-radius: 8px; padding: 16px;">
+                  <h3 style="margin: 0 0 10px 0; color: var(--info); font-size: 15px;">Step 3 &mdash; Copy the Role ARN and Paste Above</h3>
+                  <ol style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 2;">
+                    <li>Name the role e.g. <code>ConnectMigrationCrossAccountRole</code></li>
+                    <li>Click <strong>Create role</strong></li>
+                    <li>Open the newly created role and copy its <strong>ARN</strong> (format: <code>arn:aws:iam::&lt;account-id&gt;:role/ConnectMigrationCrossAccountRole</code>)</li>
+                    <li>Paste the ARN into the <em>Cross-Account Role ARN</em> field for the appropriate instance above</li>
+                    <li>Click <strong>Test Connection</strong> to verify</li>
+                  </ol>
+                </div>
+
+                <!-- Note -->
+                <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; padding: 12px 16px; font-size: 13px; line-height: 1.6;">
+                  &#9888;&#65039; <strong>Note:</strong> If <em>both</em> source and target are in different accounts, create a role in each account and enter both ARNs. If only one is cross-account, only that one needs a role. Roles are not needed for same-account migrations.
+                </div>
+
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: Discover & Select ═══ -->
+      <div id="tab-discover" class="tab-content">
+        <!-- Resource Type Selector -->
+        <div class="card">
+          <h2>Select Resource Type to Discover</h2>
+          <div class="resource-types">
+            <button class="resource-type-btn" onclick="selectResourceType('hours_of_operations')"><span class="dep-order">1</span>Hours of Operations</button>
+            <button class="resource-type-btn" onclick="selectResourceType('security_profiles')"><span class="dep-order">2</span>Security Profiles</button>
+            <button class="resource-type-btn" onclick="selectResourceType('queues')"><span class="dep-order">3</span>Queues</button>
+            <button class="resource-type-btn" onclick="selectResourceType('contact_flows')"><span class="dep-order">4</span>Contact Flows</button>
+            <button class="resource-type-btn" onclick="selectResourceType('routing_profiles')"><span class="dep-order">5</span>Routing Profiles</button>
+            <button class="resource-type-btn" onclick="selectResourceType('quick_connects')"><span class="dep-order">6</span>Quick Connects</button>
+            <button class="resource-type-btn" onclick="selectResourceType('predefined_attributes')"><span class="dep-order">7</span>Predefined Attributes</button>
+            <button class="resource-type-btn" onclick="selectResourceType('user_proficiencies')"><span class="dep-order">8</span>User Proficiencies</button>
+          </div>
+        </div>
+
+        <!-- Discovery Results -->
+        <div id="discoveryResults" style="display: none;">
+          <div class="stats-bar">
+            <div class="stat-card info">
+              <div class="stat-value" id="discoveredCount">0</div>
+              <div class="stat-label">Discovered on Source</div>
+            </div>
+            <div class="stat-card warning">
+              <div class="stat-value" id="existsOnTargetCount">0</div>
+              <div class="stat-label">Already on Target</div>
+            </div>
+            <div class="stat-card success">
+              <div class="stat-value" id="selectedCount">0</div>
+              <div class="stat-label">Selected for Migration</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+              <h2 id="resourceTypeTitle" style="margin: 0;">Resources</h2>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="filterInput" placeholder="Filter by name..." oninput="filterDiscovered()" style="width: 250px;">
+                <button class="btn secondary sm" onclick="selectAllVisible()">Select All</button>
+                <button class="btn secondary sm" onclick="deselectAll()">Deselect All</button>
+                <button class="btn primary sm" onclick="addSelectedToMigration()">Add to Migration &#10132;</button>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="data-table" id="discoveryTable">
+                <thead>
+                  <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="selectAllCb" onchange="toggleSelectAllCb(this)"></th>
+                    <th>Name</th>
+                    <th>Details</th>
+                    <th>On Target?</th>
+                  </tr>
+                </thead>
+                <tbody id="discoveryBody"></tbody>
+              </table>
+            </div>
+
+            <div id="discoveryEmpty" class="empty-state" style="display: none;">
+              <div class="icon">&#128270;</div>
+              <h2>No Resources Found</h2>
+              <p class="muted">Select a resource type and click Discover to scan the source instance.</p>
+            </div>
+
+            <div id="discoveryLoading" style="text-align: center; padding: 40px; display: none;">
+              <span class="spinner"></span> Discovering resources on source instance...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: Migrate ═══ -->
+      <div id="tab-migrate" class="tab-content">
+        <div class="stats-bar">
+          <div class="stat-card">
+            <div class="stat-value" id="migrateTotalCount">0</div>
+            <div class="stat-label">Total Queued</div>
+          </div>
+          <div class="stat-card success">
+            <div class="stat-value" id="migrateSuccessCount">0</div>
+            <div class="stat-label">Succeeded</div>
+          </div>
+          <div class="stat-card danger">
+            <div class="stat-value" id="migrateFailedCount">0</div>
+            <div class="stat-label">Failed</div>
+          </div>
+          <div class="stat-card warning">
+            <div class="stat-value" id="migrateSkippedCount">0</div>
+            <div class="stat-label">Skipped</div>
+          </div>
+        </div>
+
+        <!-- Migration Queue -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 style="margin: 0;">Migration Queue</h2>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn danger sm" onclick="clearMigrationQueue()">Clear Queue</button>
+              <button class="btn success" onclick="startMigration()" id="startMigrationBtn">&#9654; Start Migration</button>
+            </div>
+          </div>
+
+          <div class="progress-bar" id="migrationProgress" style="display: none;">
+            <div class="progress-fill" id="migrationProgressFill" style="width: 0%;"></div>
+          </div>
+
+          <div class="table-wrapper" id="migrationQueueWrapper">
+            <table class="data-table" id="migrationTable">
+              <thead>
+                <tr>
+                  <th style="width: 40px;">&#128465;</th>
+                  <th>Type</th>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody id="migrationBody"></tbody>
+            </table>
+          </div>
+
+          <div id="migrationEmpty" class="empty-state">
+            <div class="icon">&#128230;</div>
+            <h2>Migration Queue Empty</h2>
+            <p class="muted">Go to the Discover tab to find and select resources for migration.</p>
+          </div>
+        </div>
+
+        <!-- Migration Log -->
+        <div class="card" id="migrationLogCard" style="display: none;">
+          <h2>Migration Log</h2>
+          <div class="log-panel" id="migrationLog"></div>
+        </div>
+      </div>
+
+      <!-- ═══ TAB: Report ═══ -->
+      <div id="tab-report" class="tab-content">
+        <div class="stats-bar">
+          <div class="stat-card success">
+            <div class="stat-value" id="reportSuccess">0</div>
+            <div class="stat-label">Created</div>
+          </div>
+          <div class="stat-card warning">
+            <div class="stat-value" id="reportSkipped">0</div>
+            <div class="stat-label">Skipped (Existing)</div>
+          </div>
+          <div class="stat-card danger">
+            <div class="stat-value" id="reportFailed">0</div>
+            <div class="stat-label">Failed</div>
+          </div>
+          <div class="stat-card info">
+            <div class="stat-value" id="reportWarnings">0</div>
+            <div class="stat-label">Total</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 style="margin: 0;">Migration Report</h2>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn secondary sm" onclick="loadReport()" title="Refresh from server">&#8635; Refresh</button>
+              <button class="btn secondary sm" onclick="exportReport()">&#128190; Export CSV</button>
+              <button class="btn danger sm" onclick="clearReport()" title="Clear all report results">&#10005; Clear All</button>
+            </div>
+          </div>
+
+          <div class="table-wrapper" id="reportTableWrapper">
+            <table class="data-table" id="reportTable">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Type</th>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Source → Target</th>
+                  <th>User</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="reportBody"></tbody>
+            </table>
+          </div>
+
+          <div id="reportEmpty" class="empty-state">
+            <div class="icon">&#128202;</div>
+            <h2>No Migration Results Yet</h2>
+            <p class="muted">Run a migration from the Migrate tab to see results here.</p>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ═══ TAB: Validate ═══ -->
+      <div id="tab-validate" class="tab-content">
+
+        <!-- Instance selector -->
+        <div class="card">
+          <h2 style="margin: 0 0 6px 0;">&#128736; Flow Validator</h2>
+          <p class="muted" style="margin: 0 0 20px 0; font-size: 14px;">Select an instance, load its contact flows, then run checks individually or all at once.</p>
+
+          <div style="display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap;">
+            <div class="form-group" style="flex: 0 0 210px; margin: 0;">
+              <label for="validatePreset">Quick Fill</label>
+              <select id="validatePreset" onchange="applyValidatePreset(this.value); this.value=''">
+                <option value="">— Select instance —</option>
+                <option value="us">US East</option>
+                <option value="eu">EU (Frankfurt)</option>
+                <option value="tokyo">Tokyo</option>
+                <option value="singapore">Singapore</option>
+                <option value="dev">DEV</option>
+                <option value="eu_old">EU OLD ⚠️ Cross-Account</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 0 0 210px; margin: 0;">
+              <label for="validateRegion">Region</label>
+              <select id="validateRegion">
+                <option value="us-east-1">US East (N. Virginia)</option>
+                <option value="eu-central-1">EU (Frankfurt)</option>
+                <option value="ap-northeast-1">Tokyo</option>
+                <option value="ap-southeast-1">Singapore</option>
+              </select>
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 260px; margin: 0;">
+              <label for="validateInstanceId">Instance ID</label>
+              <input type="text" id="validateInstanceId" placeholder="e.g. YOUR_CONNECT_INSTANCE_ID">
+            </div>
+            <div style="flex: 0 0 auto; padding-bottom: 0;">
+              <button class="btn primary" onclick="loadFlowsForValidation()" id="loadFlowsBtn">&#128270; Load Flows</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flows table -->
+        <div id="validateResults" style="display: none;">
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
+              <h2 style="margin: 0;">Contact Flows <span id="validateFlowCount" class="muted" style="font-size: 14px; font-weight: normal;"></span></h2>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="validateFilter" placeholder="Filter by name..." oninput="renderValidateTable()" style="width: 220px;">
+                <button class="btn secondary sm" onclick="checkAllFlows()" id="checkAllBtn">&#9654; Check All</button>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="data-table" id="validateTable">
+                <thead>
+                  <tr>
+                    <th>Flow Name</th>
+                    <th>Type</th>
+                    <th style="text-align:center; width:80px;">&#10060; Critical</th>
+                    <th style="text-align:center; width:70px;">&#9888; High</th>
+                    <th style="text-align:center; width:70px;">&#128312; Medium</th>
+                    <th style="text-align:center; width:70px;">&#8505; Low/Info</th>
+                    <th style="width:160px;">Last Checked</th>
+                    <th style="width:80px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="validateBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Finding detail panel -->
+        <div id="validateDetailPanel" class="card" style="display: none; border-left: 4px solid var(--info);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 style="margin: 0;" id="validateDetailTitle">Flow Findings</h2>
+            <button class="btn secondary sm" onclick="closeValidateDetail()">&#10005; Close</button>
+          </div>
+          <div id="validateDetailContent"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ─── Configuration ───────────────────────────────────────────────
+const API_BASE_URL = 'https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/prod';
+
+// ─── State ───────────────────────────────────────────────────────
+let discoveredResources = [];
+let targetExistingNames = [];
+let migrationQueue = [];
+let migrationResults = [];
+let reportLoaded = false;
+let arnMap = {};  // source ID/ARN → target ID/ARN mapping
+let currentResourceType = '';
+let isMigrating = false;
+let sourceConnected = false;
+let targetConnected = false;
+let discoverGeneration = 0;  // race condition guard
+
+const RESOURCE_TYPE_LABELS = {
+  hours_of_operations: 'Hours of Operations',
+  security_profiles: 'Security Profiles',
+  queues: 'Queues',
+  contact_flows: 'Contact Flows',
+  routing_profiles: 'Routing Profiles',
+  quick_connects: 'Quick Connects',
+  predefined_attributes: 'Predefined Attributes',
+  user_proficiencies: 'User Proficiencies'
+};
+
+const INSTANCE_PRESETS = {
+  us:        { region: 'us-east-1',      instanceId: 'YOUR_CONNECT_INSTANCE_ID' },
+  eu:        { region: 'eu-central-1',   instanceId: 'YOUR_CONNECT_INSTANCE_ID' },
+  tokyo:     { region: 'ap-northeast-1', instanceId: 'YOUR_CONNECT_INSTANCE_ID' },
+  singapore: { region: 'ap-southeast-1', instanceId: 'YOUR_CONNECT_INSTANCE_ID' },
+  dev:       { region: 'eu-central-1',   instanceId: 'YOUR_CONNECT_INSTANCE_ID' },
+  eu_old:    { region: 'eu-central-1',   instanceId: 'YOUR_CONNECT_INSTANCE_ID', crossAccount: true }
+};
+
+function applyPreset(side, preset) {
+  if (!preset) return;
+  const p = INSTANCE_PRESETS[preset];
+  if (!p) return;
+  document.getElementById(side + 'Region').value = p.region;
+  document.getElementById(side + 'InstanceId').value = p.instanceId;
+  document.getElementById(side + 'RoleArn').value = p.roleArn || '';
+  if (p.crossAccount && !p.roleArn) {
+    showToast('This is a cross-account instance — enter the Role ARN below', 'warn');
+  }
+}
+
+// ─── Auth ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  initTheme();
+  const token = '';
+  const email = localStorage.getItem('app_userEmail');
+
+  if (!token) {
+    /* auth gate removed */;
+    return;
+  }
+
+  document.getElementById('mainContent').style.display = 'block';
+  if (email) {
+    document.getElementById('userEmail').textContent = email;
+  }
+
+  // Load saved configuration
+  loadSavedConfig();
+});
+
+function loadSavedConfig() {
+  try {
+    const saved = localStorage.getItem('migration_config');
+    if (saved) {
+      const cfg = JSON.parse(saved);
+      if (cfg.sourceRegion) document.getElementById('sourceRegion').value = cfg.sourceRegion;
+      if (cfg.sourceInstanceId) document.getElementById('sourceInstanceId').value = cfg.sourceInstanceId;
+      if (cfg.sourceRoleArn) document.getElementById('sourceRoleArn').value = cfg.sourceRoleArn;
+      if (cfg.targetRegion) document.getElementById('targetRegion').value = cfg.targetRegion;
+      if (cfg.targetInstanceId) document.getElementById('targetInstanceId').value = cfg.targetInstanceId;
+      if (cfg.targetRoleArn) document.getElementById('targetRoleArn').value = cfg.targetRoleArn;
+    }
+  } catch(e) { /* ignore */ }
+}
+
+function saveConfig() {
+  const cfg = {
+    sourceRegion: document.getElementById('sourceRegion').value,
+    sourceInstanceId: document.getElementById('sourceInstanceId').value.trim(),
+    sourceRoleArn: document.getElementById('sourceRoleArn').value.trim(),
+    targetRegion: document.getElementById('targetRegion').value,
+    targetInstanceId: document.getElementById('targetInstanceId').value.trim(),
+    targetRoleArn: document.getElementById('targetRoleArn').value.trim()
+  };
+  localStorage.setItem('migration_config', JSON.stringify(cfg));
+}
+
+// ─── Theme ───────────────────────────────────────────────────────
+function initTheme() {
+  const saved = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeButton(saved);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const next = current === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  updateThemeButton(next);
+}
+
+function updateThemeButton(theme) {
+  document.getElementById('themeIcon').innerHTML = theme === 'dark' ? '&#9728;' : '&#127769;';
+  document.getElementById('themeText').textContent = theme === 'dark' ? 'Light' : 'Dark';
+}
+
+// ─── Tabs ────────────────────────────────────────────────────────
+function switchTab(tabName) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + tabName).classList.add('active');
+  const tabs = document.querySelectorAll('.tab');
+  const tabMap = ['config', 'discover', 'migrate', 'report', 'validate'];
+  const idx = tabMap.indexOf(tabName);
+  if (idx >= 0 && tabs[idx]) tabs[idx].classList.add('active');
+  if (tabName === 'report' && !reportLoaded) {
+    loadReport();
+  }
+}
+
+// ─── API Calls ───────────────────────────────────────────────────
+async function apiCall(endpoint, body) {
+  const token = '';
+  const resp = await fetch(API_BASE_URL + endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  const data = await resp.json();
+  if (!resp.ok && !data.success) {
+    throw new Error(data.error || `API error (${resp.status})`);
+  }
+  return data;
+}
+
+async function apiRequest(endpoint, method = 'GET') {
+  const token = '';
+  const resp = await fetch(API_BASE_URL + endpoint, {
+    method,
+    headers: {
+    }
+  });
+  const data = await resp.json();
+  if (!resp.ok) {
+    throw new Error(data.error || `API error (${resp.status})`);
+  }
+  return data;
+}
+
+// ─── Test Connection ─────────────────────────────────────────────
+async function testConnection(side) {
+  const region = document.getElementById(side + 'Region').value;
+  const instanceId = document.getElementById(side + 'InstanceId').value.trim();
+  const roleArn = document.getElementById(side + 'RoleArn').value.trim();
+  const statusEl = document.getElementById(side + 'Status');
+  const btn = document.getElementById('test' + (side === 'source' ? 'Source' : 'Target') + 'Btn');
+
+  if (!instanceId) {
+    showToast('Please enter an Instance ID', 'warn');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Testing...';
+  statusEl.innerHTML = '';
+
+  try {
+    const result = await apiCall('/migrate/test-connection', { region, instanceId, roleArn: roleArn || undefined });
+
+    if (result.success) {
+      statusEl.innerHTML = `
+        <span class="status-badge connected">&#10003; Connected</span>
+        <div style="margin-top: 8px; font-size: 13px; color: var(--muted);">
+          <strong>${result.instanceAlias || 'Unknown'}</strong><br>
+          Status: ${result.instanceStatus}
+        </div>`;
+      if (side === 'source') sourceConnected = true;
+      else targetConnected = true;
+      saveConfig();
+      showToast(`${side === 'source' ? 'Source' : 'Target'} connected: ${result.instanceAlias}`, 'success');
+    } else {
+      statusEl.innerHTML = `<span class="status-badge error">&#10007; Failed</span>
+        <div style="margin-top: 8px; font-size: 13px; color: var(--danger);">${result.error}</div>`;
+      if (side === 'source') sourceConnected = false;
+      else targetConnected = false;
+    }
+  } catch (e) {
+    statusEl.innerHTML = `<span class="status-badge error">&#10007; Error</span>
+      <div style="margin-top: 8px; font-size: 13px; color: var(--danger);">${e.message}</div>`;
+    if (side === 'source') sourceConnected = false;
+    else targetConnected = false;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Test Connection';
+  }
+}
+
+// ─── Discover ────────────────────────────────────────────────────
+function selectResourceType(type) {
+  currentResourceType = type;
+  // Update active button
+  document.querySelectorAll('.resource-type-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  discoverResources(type);
+}
+
+async function discoverResources(type) {
+  const thisGen = ++discoverGeneration;  // increment to invalidate any in-flight request
+  const sourceRegion = document.getElementById('sourceRegion').value;
+  const sourceInstanceId = document.getElementById('sourceInstanceId').value.trim();
+  const sourceRoleArn = document.getElementById('sourceRoleArn').value.trim();
+  const targetRegion = document.getElementById('targetRegion').value;
+  const targetInstanceId = document.getElementById('targetInstanceId').value.trim();
+  const targetRoleArn = document.getElementById('targetRoleArn').value.trim();
+
+  if (!sourceInstanceId) {
+    showToast('Please configure the source instance first', 'warn');
+    switchTab('config');
+    return;
+  }
+
+  document.getElementById('discoveryResults').style.display = 'block';
+  document.getElementById('discoveryLoading').style.display = 'block';
+  document.getElementById('discoveryBody').innerHTML = '';
+  document.getElementById('discoveryEmpty').style.display = 'none';
+  document.getElementById('resourceTypeTitle').textContent = RESOURCE_TYPE_LABELS[type] || type;
+
+  try {
+    // Discover source resources
+    const sourceResult = await apiCall('/migrate/discover', {
+      region: sourceRegion,
+      instanceId: sourceInstanceId,
+      roleArn: sourceRoleArn || undefined,
+      resourceType: type
+    });
+    discoveredResources = sourceResult.resources || [];
+
+    // Stale response guard — user clicked a different resource type while we were loading
+    if (thisGen !== discoverGeneration) return;
+
+    // Discover what already exists on target (if configured)
+    targetExistingNames = [];
+    if (targetInstanceId) {
+      try {
+        const targetResult = await apiCall('/migrate/discover-target', {
+          region: targetRegion,
+          instanceId: targetInstanceId,
+          roleArn: targetRoleArn || undefined,
+          resourceType: type
+        });
+        targetExistingNames = targetResult.existingNames || [];
+      } catch (e) {
+        // Non-fatal — just can't show target comparison
+      }
+    }
+
+    // Stale response guard (after target discovery)
+    if (thisGen !== discoverGeneration) return;
+
+    renderDiscoveredResources();
+    document.getElementById('discoveredCount').textContent = discoveredResources.length;
+    document.getElementById('existsOnTargetCount').textContent = targetExistingNames.length;
+
+  } catch (e) {
+    showToast('Discovery failed: ' + e.message, 'error');
+  } finally {
+    document.getElementById('discoveryLoading').style.display = 'none';
+  }
+}
+
+function renderDiscoveredResources() {
+  const tbody = document.getElementById('discoveryBody');
+  const filter = (document.getElementById('filterInput').value || '').toLowerCase();
+  tbody.innerHTML = '';
+
+  if (discoveredResources.length === 0) {
+    document.getElementById('discoveryEmpty').style.display = 'block';
+    return;
+  }
+  document.getElementById('discoveryEmpty').style.display = 'none';
+
+  let selectedCount = 0;
+  discoveredResources.forEach((res, idx) => {
+    const name = res.name || '';
+    if (filter && !name.toLowerCase().includes(filter)) return;
+
+    const existsOnTarget = targetExistingNames.includes(name);
+    const isSelected = res._selected;
+    if (isSelected) selectedCount++;
+
+    const detailParts = [];
+    if (res.description) detailParts.push(res.description);
+    if (res.flowType) detailParts.push('Type: ' + res.flowType);
+    if (res.timeZone) detailParts.push('TZ: ' + res.timeZone);
+    if (res.email) detailParts.push(res.email);
+    if (res.proficiencyCount) detailParts.push(res.proficiencyCount + ' proficiencies');
+    if (res.error) detailParts.push('<span style="color:var(--danger)">Error: ' + res.error + '</span>');
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="checkbox" ${isSelected ? 'checked' : ''} onchange="toggleResourceSelection(${idx}, this.checked)"></td>
+      <td><strong>${escapeHtml(name)}</strong></td>
+      <td class="muted" style="font-size: 13px;">${detailParts.join(' &middot; ') || '-'}</td>
+      <td>
+        ${existsOnTarget
+          ? '<span class="exists-indicator exists"></span><span style="color: var(--warning); font-size: 13px;">Yes</span>'
+          : '<span class="exists-indicator new"></span><span style="color: var(--success); font-size: 13px;">No</span>'}
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('selectedCount').textContent = selectedCount;
+}
+
+function toggleResourceSelection(idx, checked) {
+  discoveredResources[idx]._selected = checked;
+  updateSelectedCount();
+}
+
+function toggleSelectAllCb(cb) {
+  const filter = (document.getElementById('filterInput').value || '').toLowerCase();
+  discoveredResources.forEach(res => {
+    if (!filter || (res.name || '').toLowerCase().includes(filter)) {
+      res._selected = cb.checked;
+    }
+  });
+  renderDiscoveredResources();
+}
+
+function selectAllVisible() {
+  const filter = (document.getElementById('filterInput').value || '').toLowerCase();
+  discoveredResources.forEach(res => {
+    if (!filter || (res.name || '').toLowerCase().includes(filter)) {
+      res._selected = true;
+    }
+  });
+  renderDiscoveredResources();
+}
+
+function deselectAll() {
+  discoveredResources.forEach(res => res._selected = false);
+  renderDiscoveredResources();
+}
+
+function filterDiscovered() {
+  renderDiscoveredResources();
+}
+
+function updateSelectedCount() {
+  const count = discoveredResources.filter(r => r._selected).length;
+  document.getElementById('selectedCount').textContent = count;
+}
+
+// ─── Migration Queue ─────────────────────────────────────────────
+function addSelectedToMigration() {
+  const selected = discoveredResources.filter(r => r._selected);
+  if (selected.length === 0) {
+    showToast('No resources selected', 'warn');
+    return;
+  }
+
+  // Add to migration queue (avoid duplicates by name+type)
+  let added = 0;
+  selected.forEach(res => {
+    const exists = migrationQueue.some(q => q.name === res.name && q.type === currentResourceType);
+    if (!exists) {
+      migrationQueue.push({
+        ...res,
+        resourceType: currentResourceType,
+        status: 'pending'
+      });
+      added++;
+    }
+  });
+
+  updateMigrationBadge();
+  renderMigrationQueue();
+  showToast(`Added ${added} resources to migration queue`, 'success');
+
+  // Deselect after adding
+  discoveredResources.forEach(r => r._selected = false);
+  renderDiscoveredResources();
+}
+
+function updateMigrationBadge() {
+  const badge = document.getElementById('selectedBadge');
+  const count = migrationQueue.filter(q => q.status === 'pending').length;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = 'inline';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function renderMigrationQueue() {
+  const tbody = document.getElementById('migrationBody');
+  const emptyEl = document.getElementById('migrationEmpty');
+  const wrapperEl = document.getElementById('migrationQueueWrapper');
+
+  if (migrationQueue.length === 0) {
+    emptyEl.style.display = 'block';
+    wrapperEl.style.display = 'none';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  wrapperEl.style.display = 'block';
+
+  tbody.innerHTML = '';
+
+  // Group by type and sort by dependency order
+  const typeOrder = ['hours_of_operations', 'security_profiles', 'queues', 'contact_flows', 'routing_profiles', 'quick_connects'];
+  const sorted = [...migrationQueue].sort((a, b) => {
+    return typeOrder.indexOf(a.resourceType) - typeOrder.indexOf(b.resourceType);
+  });
+
+  sorted.forEach((item, idx) => {
+    const statusHtml = item.status === 'pending'
+      ? '<span class="result-badge" style="background: rgba(107,114,128,0.15); color: var(--muted);">Pending</span>'
+      : item.status === 'migrating'
+      ? '<span class="spinner"></span> Migrating...'
+      : item.status === 'success'
+      ? '<span class="result-badge success">Success</span>'
+      : item.status === 'failed'
+      ? '<span class="result-badge failed">Failed</span>'
+      : '<span class="result-badge skipped">Skipped</span>';
+
+    const originalIdx = migrationQueue.indexOf(item);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.status === 'pending' ? `<button class="btn danger sm" onclick="removeFromQueue(${originalIdx})" style="padding: 4px 8px;">&#10007;</button>` : ''}</td>
+      <td><span class="dep-order">${typeOrder.indexOf(item.resourceType) + 1}</span>${RESOURCE_TYPE_LABELS[item.resourceType] || item.resourceType}</td>
+      <td><strong>${escapeHtml(item.name)}</strong></td>
+      <td>${statusHtml}</td>
+      <td class="muted" style="font-size: 13px;">${item.resultMessage || item.description || ''}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Update stats
+  document.getElementById('migrateTotalCount').textContent = migrationQueue.length;
+  document.getElementById('migrateSuccessCount').textContent = migrationQueue.filter(q => q.status === 'success').length;
+  document.getElementById('migrateFailedCount').textContent = migrationQueue.filter(q => q.status === 'failed').length;
+  document.getElementById('migrateSkippedCount').textContent = migrationQueue.filter(q => q.status === 'skipped').length;
+}
+
+function removeFromQueue(idx) {
+  migrationQueue.splice(idx, 1);
+  updateMigrationBadge();
+  renderMigrationQueue();
+}
+
+function clearMigrationQueue() {
+  if (isMigrating) {
+    showToast('Cannot clear queue during migration', 'warn');
+    return;
+  }
+  migrationQueue = [];
+  updateMigrationBadge();
+  renderMigrationQueue();
+}
+
+// ─── Migration Execution ─────────────────────────────────────────
+async function startMigration() {
+  if (isMigrating) return;
+
+  const pending = migrationQueue.filter(q => q.status === 'pending');
+  if (pending.length === 0) {
+    showToast('No pending resources to migrate', 'warn');
+    return;
+  }
+
+  const targetRegion = document.getElementById('targetRegion').value;
+  const targetInstanceId = document.getElementById('targetInstanceId').value.trim();
+  const targetRoleArn = document.getElementById('targetRoleArn').value.trim();
+
+  if (!targetInstanceId) {
+    showToast('Please configure the target instance', 'warn');
+    switchTab('config');
+    return;
+  }
+
+  isMigrating = true;
+  document.getElementById('startMigrationBtn').disabled = true;
+  document.getElementById('migrationProgress').style.display = 'block';
+  document.getElementById('migrationLogCard').style.display = 'block';
+
+  const logEl = document.getElementById('migrationLog');
+  logEl.innerHTML = '';
+
+  addLog('Starting migration...', 'info');
+  addLog(`Target: ${targetRegion} / ${targetInstanceId}`, 'info');
+
+  // Group pending items by type in dependency order
+  const typeOrder = ['hours_of_operations', 'security_profiles', 'queues', 'contact_flows', 'routing_profiles', 'quick_connects', 'predefined_attributes', 'user_proficiencies'];
+  const grouped = {};
+  pending.forEach(item => {
+    if (!grouped[item.resourceType]) grouped[item.resourceType] = [];
+    grouped[item.resourceType].push(item);
+  });
+
+  let totalDone = 0;
+  const totalCount = pending.length;
+
+  for (const type of typeOrder) {
+    const items = grouped[type];
+    if (!items || items.length === 0) continue;
+
+    addLog(`\nMigrating ${RESOURCE_TYPE_LABELS[type]} (${items.length} items)...`, 'info');
+
+    // Mark as migrating
+    items.forEach(item => {
+      item.status = 'migrating';
+    });
+    renderMigrationQueue();
+
+    try {
+      const result = await apiCall('/migrate/replicate', {
+        source: {
+          region: document.getElementById('sourceRegion').value,
+          instanceId: document.getElementById('sourceInstanceId').value.trim(),
+          roleArn: document.getElementById('sourceRoleArn').value.trim() || undefined
+        },
+        target: {
+          region: targetRegion,
+          instanceId: targetInstanceId,
+          roleArn: targetRoleArn || undefined
+        },
+        resourceType: type,
+        resources: items,
+        arnMap: arnMap
+      });
+
+      // Update ARN map with new mappings
+      if (result.arnMap) {
+        Object.assign(arnMap, result.arnMap);
+      }
+
+      // Update individual item statuses
+      (result.results || []).forEach((r, i) => {
+        if (i < items.length) {
+          items[i].status = r.status;
+          items[i].resultMessage = r.error || r.message || r.notes || '';
+          if (r.warnings) {
+            items[i].resultMessage += ' Warnings: ' + r.warnings.join('; ');
+          }
+        }
+
+        // Log each result
+        if (r.status === 'success') {
+          addLog(`  ✓ ${r.name} → ${r.targetId || 'created'}`, 'success');
+        } else if (r.status === 'skipped') {
+          addLog(`  ○ ${r.name} — ${r.message || 'skipped'}`, 'warn');
+        } else {
+          addLog(`  ✗ ${r.name} — ${r.error || 'failed'}`, 'error');
+        }
+      });
+
+      totalDone += items.length;
+      const pct = Math.round((totalDone / totalCount) * 100);
+      document.getElementById('migrationProgressFill').style.width = pct + '%';
+
+      addLog(`  Summary: ${result.summary.success} created, ${result.summary.skipped} skipped, ${result.summary.failed} failed`, 'info');
+
+    } catch (e) {
+      addLog(`  ERROR: ${e.message}`, 'error');
+      items.forEach(item => {
+        item.status = 'failed';
+        item.resultMessage = e.message;
+      });
+      totalDone += items.length;
+    }
+
+    renderMigrationQueue();
+  }
+
+  addLog('\nMigration complete!', 'info');
+  isMigrating = false;
+  document.getElementById('startMigrationBtn').disabled = false;
+  updateMigrationBadge();
+  loadReport();
+  showToast('Migration complete — check the Report tab for details', 'success');
+}
+
+function addLog(msg, level) {
+  const logEl = document.getElementById('migrationLog');
+  const span = document.createElement('div');
+  span.className = 'log-' + level;
+  span.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+  logEl.appendChild(span);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+// ─── Report ──────────────────────────────────────────────────────
+async function loadReport() {
+  try {
+    const data = await apiRequest('/migrate/report');
+    migrationResults = data.results || [];
+    reportLoaded = true;
+    renderReport();
+  } catch (e) {
+    showToast('Failed to load report: ' + e.message, 'error');
+  }
+}
+
+function formatTimestamp(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+}
+
+function renderReport() {
+  const tbody = document.getElementById('reportBody');
+  const emptyEl = document.getElementById('reportEmpty');
+  const wrapperEl = document.getElementById('reportTableWrapper');
+
+  if (migrationResults.length === 0) {
+    emptyEl.style.display = 'block';
+    wrapperEl.style.display = 'none';
+    document.getElementById('reportSuccess').textContent = '0';
+    document.getElementById('reportSkipped').textContent = '0';
+    document.getElementById('reportFailed').textContent = '0';
+    document.getElementById('reportWarnings').textContent = '0';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  wrapperEl.style.display = 'block';
+
+  tbody.innerHTML = '';
+  let successCount = 0, failedCount = 0, skippedCount = 0;
+
+  migrationResults.forEach(r => {
+    if (r.status === 'success') successCount++;
+    else if (r.status === 'failed') failedCount++;
+    else if (r.status === 'skipped') skippedCount++;
+
+    const sourceLabel = r.sourceRegion ? r.sourceRegion.split('-').slice(0,2).join('-') : '?';
+    const targetLabel = r.targetRegion ? r.targetRegion.split('-').slice(0,2).join('-') : '?';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="muted" style="font-size: 12px; white-space: nowrap;">${formatTimestamp(r.timestamp)}</td>
+      <td>${RESOURCE_TYPE_LABELS[r.resourceType] || r.resourceType}</td>
+      <td><strong>${escapeHtml(r.name || '')}</strong></td>
+      <td><span class="result-badge ${r.status}">${r.status}</span></td>
+      <td class="muted" style="font-size: 12px;">${sourceLabel} → ${targetLabel}</td>
+      <td class="muted" style="font-size: 12px;">${escapeHtml(r.userEmail || r.user || '-')}</td>
+      <td class="muted" style="font-size: 12px;">${escapeHtml(r.notes || '-')}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('reportSuccess').textContent = successCount;
+  document.getElementById('reportSkipped').textContent = skippedCount;
+  document.getElementById('reportFailed').textContent = failedCount;
+  document.getElementById('reportWarnings').textContent = migrationResults.length;
+}
+
+async function clearReport() {
+  if (!confirm('Clear all migration report history? This cannot be undone.')) return;
+  try {
+    await apiRequest('/migrate/report', 'DELETE');
+    migrationResults = [];
+    renderReport();
+    showToast('Report cleared', 'success');
+  } catch (e) {
+    showToast('Failed to clear report: ' + e.message, 'error');
+  }
+}
+
+function exportReport() {
+  if (migrationResults.length === 0) {
+    showToast('No results to export', 'warn');
+    return;
+  }
+
+  let csv = 'Timestamp,Type,Name,Status,Source Region,Target Region,User,Notes\n';
+  migrationResults.forEach(r => {
+    csv += `"${r.timestamp || ''}","${RESOURCE_TYPE_LABELS[r.resourceType] || r.resourceType}","${r.name}","${r.status}","${r.sourceRegion || ''}","${r.targetRegion || ''}","${r.userEmail || r.user || ''}","${(r.notes || '').replace(/"/g, '""')}"\n`;
+  });
+
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `connect-migration-report-${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── Utilities ───────────────────────────────────────────────────
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function showToast(msg, level) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + level;
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+
+// ─── Validate Tab ───────────────────────────────────────────────────────────
+
+let validateFlows = [];
+let validationCache = {};   // flowId → result object
+let validateChecking = false;
+
+function applyValidatePreset(value) {
+  if (!value) return;
+  const p = INSTANCE_PRESETS[value];
+  if (p) {
+    document.getElementById('validateRegion').value = p.region;
+    document.getElementById('validateInstanceId').value = p.instanceId;
+  }
+}
+
+async function loadFlowsForValidation() {
+  const region = document.getElementById('validateRegion').value;
+  const instanceId = document.getElementById('validateInstanceId').value.trim();
+  if (!instanceId) { showToast('Please enter an Instance ID', 'warn'); return; }
+
+  const btn = document.getElementById('loadFlowsBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Loading...';
+
+  try {
+    const result = await apiCall('/migrate/discover', { region, instanceId, resourceType: 'contact_flows' });
+    validateFlows = (result.resources || []).sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+    // Load persisted results for this instance
+    const stored = await apiRequest(`/migrate/validation-results?region=${encodeURIComponent(region)}&instanceId=${encodeURIComponent(instanceId)}`);
+    validationCache = {};
+    (stored.results || []).forEach(r => { validationCache[r.flowId] = r; });
+
+    document.getElementById('validateResults').style.display = 'block';
+    document.getElementById('validateFlowCount').textContent = `(${validateFlows.length} flows)`;
+    renderValidateTable();
+    closeValidateDetail();
+    showToast(`Loaded ${validateFlows.length} flows`, 'success');
+  } catch(e) {
+    showToast('Failed to load flows: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '&#128270; Load Flows';
+  }
+}
+
+function renderValidateTable() {
+  const tbody = document.getElementById('validateBody');
+  const filter = (document.getElementById('validateFilter').value || '').toLowerCase();
+  tbody.innerHTML = '';
+
+  const flows = validateFlows.filter(f => !filter || (f.name || '').toLowerCase().includes(filter));
+
+  flows.forEach(flow => {
+    const cached = validationCache[flow.id];
+    const tr = document.createElement('tr');
+
+    let critHtml = '<span class="sev-unchecked">—</span>';
+    let highHtml = '<span class="sev-unchecked">—</span>';
+    let medHtml  = '<span class="sev-unchecked">—</span>';
+    let lowHtml  = '<span class="sev-unchecked">—</span>';
+    let lastChecked = '<span class="muted" style="font-size:12px;">Never checked</span>';
+
+    if (cached) {
+      const c = parseInt(cached.criticalCount || 0);
+      const h = parseInt(cached.highCount || 0);
+      const m = parseInt(cached.mediumCount || 0);
+      const l = parseInt(cached.lowCount || 0) + parseInt(cached.infoCount || 0);
+      critHtml = c > 0 ? `<span class="sev-badge sev-critical">${c}</span>` : '<span class="sev-zero">0</span>';
+      highHtml = h > 0 ? `<span class="sev-badge sev-high">${h}</span>`     : '<span class="sev-zero">0</span>';
+      medHtml  = m > 0 ? `<span class="sev-badge sev-medium">${m}</span>`   : '<span class="sev-zero">0</span>';
+      lowHtml  = l > 0 ? `<span class="sev-badge sev-low">${l}</span>`      : '<span class="sev-zero">0</span>';
+      lastChecked = `<span style="font-size:12px;" class="muted">${formatTimestamp(cached.checkedAt)}</span>`;
+      if (c > 0) tr.classList.add('validate-row-critical');
+      else if (h > 0) tr.classList.add('validate-row-high');
+      else if (m > 0) tr.classList.add('validate-row-medium');
+      else tr.classList.add('validate-row-ok');
+      tr.style.cursor = 'pointer';
+      tr.onclick = (e) => { if (!e.target.closest('button')) showValidateDetail(flow, cached); };
+    }
+
+    const typeLabel = (flow.flowType || '').replace(/_/g, ' ').toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase());
+
+    tr.innerHTML = `
+      <td><strong>${escapeHtml(flow.name || '')}</strong></td>
+      <td class="muted" style="font-size:12px;">${typeLabel}</td>
+      <td style="text-align:center;">${critHtml}</td>
+      <td style="text-align:center;">${highHtml}</td>
+      <td style="text-align:center;">${medHtml}</td>
+      <td style="text-align:center;">${lowHtml}</td>
+      <td>${lastChecked}</td>
+      <td><button class="btn primary sm" id="vbtn-${flow.id}" onclick="event.stopPropagation(); runValidateFlow('${flow.id}', '${escapeHtml(flow.name || '')}')">Check</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function runValidateFlow(flowId, flowName) {
+  const region = document.getElementById('validateRegion').value;
+  const instanceId = document.getElementById('validateInstanceId').value.trim();
+
+  const btn = document.getElementById(`vbtn-${flowId}`);
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
+
+  try {
+    const result = await apiCall('/migrate/validate-flow', { region, instanceId, flowId });
+
+    validationCache[flowId] = {
+      ...result,
+      criticalCount: result.counts.critical,
+      highCount: result.counts.high,
+      mediumCount: result.counts.medium,
+      lowCount: result.counts.low,
+      infoCount: result.counts.info
+    };
+
+    renderValidateTable();
+    showValidateDetail({ id: flowId, name: flowName }, validationCache[flowId]);
+
+    const total = Object.values(result.counts).reduce((a, b) => a + b, 0);
+    const c = result.counts.critical, h = result.counts.high;
+    const msg = total === 0
+      ? `${flowName}: No issues found ✓`
+      : `${flowName}: ${c} critical, ${h} high, ${result.counts.medium} medium`;
+    showToast(msg, c > 0 ? 'error' : h > 0 ? 'warn' : 'success');
+  } catch(e) {
+    showToast(`Check failed for "${flowName}": ${e.message}`, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Check'; }
+  }
+}
+
+async function checkAllFlows() {
+  if (validateChecking) return;
+  const filter = (document.getElementById('validateFilter').value || '').toLowerCase();
+  const flows = validateFlows.filter(f => !filter || (f.name || '').toLowerCase().includes(filter));
+  if (flows.length === 0) { showToast('No flows to check', 'warn'); return; }
+
+  validateChecking = true;
+  const btn = document.getElementById('checkAllBtn');
+  btn.disabled = true;
+
+  for (let i = 0; i < flows.length; i++) {
+    btn.innerHTML = `Checking ${i + 1}/${flows.length}…`;
+    await runValidateFlow(flows[i].id, flows[i].name);
+    await new Promise(r => setTimeout(r, 250));
+  }
+
+  validateChecking = false;
+  btn.disabled = false;
+  btn.innerHTML = '&#9654; Check All';
+  showToast(`All ${flows.length} flows checked`, 'success');
+}
+
+const SEV_CONFIG = {
+  critical: { icon: '&#10060;',   label: 'Critical', color: '#ef4444' },
+  high:     { icon: '&#9888;&#65039;', label: 'High',     color: '#f97316' },
+  medium:   { icon: '&#128312;',  label: 'Medium',   color: '#f59e0b' },
+  low:      { icon: '&#128313;',  label: 'Low',      color: '#6b7280' },
+  info:     { icon: '&#8505;&#65039;', label: 'Info',     color: '#3b82f6' }
+};
+
+function showValidateDetail(flow, result) {
+  const panel = document.getElementById('validateDetailPanel');
+  const title = document.getElementById('validateDetailTitle');
+  const content = document.getElementById('validateDetailContent');
+
+  const findings = result.findings || [];
+  title.textContent = `${flow.name || flow.id}`;
+
+  if (findings.length === 0) {
+    content.innerHTML = `
+      <div style="text-align:center; padding: 28px;">
+        <div style="font-size: 40px; margin-bottom: 10px;">&#9989;</div>
+        <p style="color: var(--success); font-weight: 600; margin: 0 0 6px 0;">No issues found</p>
+        <p class="muted" style="font-size: 13px; margin: 0;">Checked: ${formatTimestamp(result.checkedAt)}</p>
+      </div>`;
+  } else {
+    const grouped = {};
+    findings.forEach(f => {
+      if (!grouped[f.severity]) grouped[f.severity] = [];
+      grouped[f.severity].push(f);
+    });
+
+    const c = parseInt(result.criticalCount || 0);
+    const h = parseInt(result.highCount || 0);
+    const m = parseInt(result.mediumCount || 0);
+    const l = parseInt(result.lowCount || 0) + parseInt(result.infoCount || 0);
+
+    let html = `<div style="display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; align-items:center;">`;
+    if (c > 0) html += `<span class="sev-badge sev-critical" style="font-size:14px; padding:4px 12px;">${c} Critical</span>`;
+    if (h > 0) html += `<span class="sev-badge sev-high" style="font-size:14px; padding:4px 12px;">${h} High</span>`;
+    if (m > 0) html += `<span class="sev-badge sev-medium" style="font-size:14px; padding:4px 12px;">${m} Medium</span>`;
+    if (l > 0) html += `<span class="sev-badge sev-low" style="font-size:14px; padding:4px 12px;">${l} Low/Info</span>`;
+    html += `<span class="muted" style="font-size:12px; margin-left:auto;">Checked: ${formatTimestamp(result.checkedAt)}</span></div>`;
+
+    ['critical', 'high', 'medium', 'low', 'info'].forEach(sev => {
+      const group = grouped[sev];
+      if (!group || group.length === 0) return;
+      const sc = SEV_CONFIG[sev];
+      html += `<div style="margin-bottom:20px;">
+        <h3 style="font-size:14px; font-weight:700; margin:0 0 10px 0; color:${sc.color};">
+          ${sc.icon} ${sc.label} &mdash; ${group.length} finding${group.length !== 1 ? 's' : ''}
+        </h3>`;
+      group.forEach(f => {
+        html += `<div class="finding-item finding-${sev}">
+          ${f.blockName ? `<div class="finding-block">${escapeHtml(f.blockName)}</div>` : ''}
+          <div class="finding-msg">${escapeHtml(f.message)}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+
+    content.innerHTML = html;
+  }
+
+  panel.style.display = 'block';
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+}
+
+function closeValidateDetail() {
+  document.getElementById('validateDetailPanel').style.display = 'none';
+}
+
+</script>
+
+<style>
+/* ── Severity badges ───────────────────────────────────────────── */
+.sev-badge {
+  display: inline-block;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 2px 8px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.sev-critical { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.4); }
+.sev-high     { background: rgba(249,115,22,0.15); color: #f97316; border: 1px solid rgba(249,115,22,0.4); }
+.sev-medium   { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.4); }
+.sev-low      { background: rgba(107,114,128,0.12); color: #9ca3af; border: 1px solid rgba(107,114,128,0.3); }
+.sev-zero     { color: var(--muted); font-size: 13px; }
+.sev-unchecked { color: var(--muted); font-size: 14px; }
+
+/* ── Validate table row tinting ────────────────────────────────── */
+.validate-row-critical { background: rgba(239,68,68,0.05) !important; }
+.validate-row-critical:hover { background: rgba(239,68,68,0.10) !important; }
+.validate-row-high     { background: rgba(249,115,22,0.05) !important; }
+.validate-row-high:hover { background: rgba(249,115,22,0.10) !important; }
+.validate-row-medium   { background: rgba(245,158,11,0.04) !important; }
+.validate-row-medium:hover { background: rgba(245,158,11,0.09) !important; }
+.validate-row-ok       {}
+
+/* ── Finding detail items ──────────────────────────────────────── */
+.finding-item {
+  border-left: 3px solid transparent;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+.finding-critical { border-left-color: #ef4444; }
+.finding-high     { border-left-color: #f97316; }
+.finding-medium   { border-left-color: #f59e0b; }
+.finding-low      { border-left-color: #6b7280; }
+.finding-info     { border-left-color: #3b82f6; }
+.finding-block {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.finding-msg {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+</style>
+</body>
+</html>
